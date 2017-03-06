@@ -7,10 +7,10 @@
     "dependencies": {
         "cass-analysis": ">= 0.0.1"
     },
+    "configModule": "CASS.PackageConfig",
     "executable": {
         "name": "cass",
-        "main": "CASS.Main",
-        "pkg_config": "CASS.PackageConfig"
+        "main": "CASS.Main"
     },
     "source": {
         "git": "https://git.ps.informatik.uni-kiel.de/curry-packages/cass.git",
