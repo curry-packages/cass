@@ -18,23 +18,23 @@ module CASS.Configuration
  ) where
 
 import System
-import Distribution(installDir, curryCompiler)
+import Distribution (curryCompiler)
 import PropertyFile
 import ReadNumeric
-import FilePath(FilePath, (</>), (<.>))
+import FilePath     (FilePath, (</>), (<.>))
 import Directory
 import ReadShowTerm
-import Sort(mergeSort)
+import Sort         (mergeSort)
 import Global
-import Char(isSpace)
+import Char         (isSpace)
 
-import Analysis.Logging (debugMessage, setDebugLevel)
-import CASS.PackageConfig (packagePath, packageExecutable)
+import Analysis.Logging   (debugMessage, setDebugLevel)
+import CASS.PackageConfig (packagePath, packageExecutable, packageVersion)
 
 systemBanner :: String
 systemBanner =
-  let bannerText = "CASS: Curry Analysis Server System ("++
-                   "version of 23/01/2017 for "++curryCompiler++")"
+  let bannerText = "CASS: Curry Analysis Server System (Version " ++
+                   packageVersion ++ " of 23/01/2017 for "++curryCompiler++")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
 
@@ -45,12 +45,11 @@ systemBanner =
 --- of the server and the workers, and to find the documentation
 --- of the various analyses.
 baseDir :: String
---baseDir = installDir </> "currytools" </> "CASS"
 baseDir = packagePath
 
 --- The directory containing the documentations of the various analyses.
 docDir :: String
-docDir = baseDir </> "Docs"
+docDir = baseDir </> "docs"
 
 --- The name of the main executable. Used to start workers in `CASS.Server`.
 executableName :: String
