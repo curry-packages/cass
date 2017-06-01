@@ -2,7 +2,7 @@
 --- A few base functions for analysing type dependencies in FlatCurry programs.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version April 2013
+--- @version Junes 2017
 -----------------------------------------------------------------------------
 
 module CASS.FlatCurryDependency(dependsDirectlyOnTypes,callsDirectly) where
@@ -22,10 +22,10 @@ dependsDirectlyOnTypes (TypeSyn _ _ _ typeExpr) = nub (tconsOf typeExpr)
 
 
 tconsOf :: TypeExpr -> [QName]
-tconsOf (TVar _)          = []
-tconsOf (FuncType a b)    =  tconsOf a ++ tconsOf b
-tconsOf (TCons qName _)   = [qName]
-tconsOf (ForallType _ te) = tconsOf te
+tconsOf (TVar _)            = []
+tconsOf (FuncType a b)      =  tconsOf a ++ tconsOf b
+tconsOf (TCons qName texps) = qName : concatMap tconsOf texps
+tconsOf (ForallType _ te)   = tconsOf te
 
 
 -----------------------------------------------------------------------------

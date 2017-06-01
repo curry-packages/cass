@@ -41,6 +41,7 @@ import Analysis.RequiredValue
 import qualified Analysis.RequiredValues as RVS
 import Analysis.RightLinearity
 import Analysis.RootReplaced
+import Analysis.SensibleTypes
 import Analysis.SolutionCompleteness
 import Analysis.Termination
 import Analysis.TotallyDefined
@@ -70,6 +71,7 @@ registeredAnalysis =
   ,cassAnalysis "Higher-order constructors"  hiOrdCons        showOrder
   ,cassAnalysis "Higher-order functions"     hiOrdFunc        showOrder
   ,cassAnalysis "Productive operations"    productivityAnalysis showProductivity
+  ,cassAnalysis "Sensible types"             sensibleType     showSensible
   ,cassAnalysis "Sibling constructors"       siblingCons      showSibling
   ,cassAnalysis "Required value"             reqValueAnalysis showAFType
   ,cassAnalysis "Required value sets"        RVS.reqValueAnalysis RVS.showAFType
