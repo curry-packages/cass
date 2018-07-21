@@ -12,6 +12,7 @@ import Analysis.ProgInfo
 import FlatCurry.Types(QName,showQNameInModule)
 import Sort(sortBy)
 import XML
+import Data.Either
 
 --------------------------------------------------------------------
 --- The supported formats of the analysis server:

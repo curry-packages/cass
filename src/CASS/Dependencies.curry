@@ -8,12 +8,12 @@
 module CASS.Dependencies(getModulesToAnalyze,reduceDependencies) where
 
 import FlatCurry.Types
-import FlatCurry.Goodies(progImports)
-import ReadShowTerm(readQTerm)
-import Directory(doesFileExist,getModificationTime)
-import Maybe(fromMaybe)
-import List(delete)
-import Time(ClockTime)
+import FlatCurry.Goodies  (progImports)
+import ReadShowTerm       (readQTerm)
+import System.Directory   (doesFileExist,getModificationTime)
+import Data.Maybe         (fromMaybe)
+import Data.List          (delete)
+import Data.Time          (ClockTime)
 
 import Analysis.Logging   ( debugMessage )
 import Analysis.Types
@@ -51,9 +51,9 @@ getModulesToAnalyze enforce analysis moduleName =
                                  anaTimeList sourceTimeList fcyTimeList ([],[])
      --debugMessage 3 ("Modules up-to-date: "++ show modulesUpToDate)
      withprelude <- getWithPrelude
-     let modulesToAnalyze = if enforce then moduleList else 
+     let modulesToAnalyze = if enforce then moduleList else
            if withprelude=="no"
-           then let reduced = reduceDependencies modulesToDo 
+           then let reduced = reduceDependencies modulesToDo
                                               (modulesUpToDate ++ ["Prelude"])
                  in case reduced of (("Prelude",_):remaining) -> remaining
                                     _ -> reduced
@@ -169,10 +169,10 @@ findModulesToAnalyze (m@(mod,imports):ms)
                                 ((m:modulesToDo),modulesUpToDate)
     Nothing -> error
                  "Internal error in AnalysisDependencies.findModulesToAnalyz"
-  
+
 
 -- function to check if result file is up-to-date
--- compares timestamp of analysis result file with module source/FlatCurry file 
+-- compares timestamp of analysis result file with module source/FlatCurry file
 -- and with timpestamp of result files of all imported modules
 checkTime :: String -> ClockTime -> [String] -> [(String,Maybe ClockTime)]
           -> [(String,ClockTime)] -> [(String,Maybe ClockTime)]
@@ -194,4 +194,3 @@ reduceDependencies modulesToDo [] = modulesToDo
 reduceDependencies modulesToDo (mod:mods) =
   let modulesToDo2 = map (\ (m,list) -> (m,(delete mod list))) modulesToDo
    in reduceDependencies modulesToDo2 mods
-

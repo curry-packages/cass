@@ -14,15 +14,17 @@ module CASS.Server
   , analyzeGeneric, analyzePublic, analyzeInterface
   ) where
 
-import ReadNumeric   (readNat)
-import Char          (isSpace)
-import Directory
-import FileGoodies   (splitDirectoryBaseName)
-import FlatCurry.Types(QName)
-import IO
-import ReadShowTerm (readQTerm, showQTerm)
-import Socket (Socket(..),listenOn,listenOnFresh,sClose,waitForSocketAccept)
-import System       (system, sleep, setEnviron, getArgs)
+import Numeric            (readNat)
+import Data.Char          (isSpace)
+import System.Directory
+import System.FilePath
+import FlatCurry.Types    (QName)
+import System.IO
+import ReadShowTerm       (readQTerm, showQTerm)
+import Network.Socket     (Socket(..), listenOn, listenOnFresh,
+                           close, waitForSocketAccept)
+import System.Process     (system, sleep)
+import System.Environment (setEnv, getArgs)
 
 import Analysis.Logging (debugMessage)
 import Analysis.ProgInfo
@@ -33,7 +35,7 @@ import CASS.ServerFormats
 import CASS.ServerFunctions(WorkerMessage(..))
 
 -- Messages to communicate with the analysis server from external programs.
-data AnalysisServerMessage = 
+data AnalysisServerMessage =
     GetAnalysis
   | AnalyzeModule    String String String Bool
   | AnalyzeEntity  String String String String
@@ -54,7 +56,7 @@ mainServer mbport = do
                            mbport
   putStrLn ("Server Port: "++show port1)
   storeServerPortNumber port1
-  getDefaultPath >>= setEnviron "CURRYPATH" 
+  getDefaultPath >>= setEnv "CURRYPATH"
   numworkers <- numberOfWorkers
   if numworkers>0
    then do
@@ -63,7 +65,7 @@ mainServer mbport = do
     debugMessage 2 ("SERVER: port to workers: "++show workerport)
     handles <- startWorkers numworkers workersocket serveraddress workerport []
     serverLoop socket1 handles
-    sClose workersocket
+    close workersocket
    else
     serverLoop socket1 []
 
@@ -109,8 +111,8 @@ analyzeFunctionForBrowser ananame qn@(mname,_) aoutformat = do
 analyzeModule :: String -> String -> Bool -> AOutFormat
               -> IO (Either (ProgInfo String) String)
 analyzeModule ananame moduleName enforce aoutformat = do
-  let (mdir,mname) = splitDirectoryBaseName moduleName
-  getDefaultPath >>= setEnviron "CURRYPATH"
+  let (mdir,mname) = splitFileName moduleName
+  getDefaultPath >>= setEnv "CURRYPATH"
   curdir <- getCurrentDirectory
   unless (mdir==".") $ setCurrentDirectory mdir
   numworkers <- numberOfWorkers
@@ -122,7 +124,7 @@ analyzeModule ananame moduleName enforce aoutformat = do
       handles <- startWorkers numworkers socket serveraddress port []
       result <- runAnalysisWithWorkers ananame aoutformat enforce handles mname
       stopWorkers handles
-      sClose socket
+      close socket
       return result
      else runAnalysisWithWorkers ananame aoutformat enforce [] mname
   setCurrentDirectory curdir
@@ -132,11 +134,12 @@ analyzeModule ananame moduleName enforce aoutformat = do
 --- The analysis must be a registered one if workers are used.
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
-analyzeGeneric :: Analysis a -> String -> IO (Either (ProgInfo a) String)
+analyzeGeneric :: (Read a, Show a) => Analysis a -> String
+               -> IO (Either (ProgInfo a) String)
 analyzeGeneric analysis moduleName = do
   initializeAnalysisSystem
-  let (mdir,mname) = splitDirectoryBaseName moduleName
-  getDefaultPath >>= setEnviron "CURRYPATH" 
+  let (mdir,mname) = splitFileName moduleName
+  getDefaultPath >>= setEnv "CURRYPATH"
   curdir <- getCurrentDirectory
   unless (mdir==".") $ setCurrentDirectory mdir
   numworkers <- numberOfWorkers
@@ -148,19 +151,20 @@ analyzeGeneric analysis moduleName = do
       handles <- startWorkers numworkers socket serveraddress port []
       result <- analyzeMain analysis mname handles False True
       stopWorkers handles
-      sClose socket
+      close socket
       return result
      else
       analyzeMain analysis mname [] False True
   setCurrentDirectory curdir
   return aresult
- 
+
 --- Start the analysis system with a given analysis to compute properties
 --- of a module interface.
 --- The analysis must be a registered one if workers are used.
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
-analyzePublic :: Analysis a -> String -> IO (Either (ProgInfo a) String)
+analyzePublic :: (Read a, Show a) => Analysis a -> String
+              -> IO (Either (ProgInfo a) String)
 analyzePublic analysis moduleName =
   analyzeGeneric analysis moduleName
   >>= return . either (Left . publicProgInfo) Right
@@ -170,7 +174,8 @@ analyzePublic analysis moduleName =
 --- The analysis must be a registered one if workers are used.
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
-analyzeInterface :: Analysis a -> String -> IO (Either [(QName,a)] String)
+analyzeInterface :: (Read a, Show a) => Analysis a -> String
+                 -> IO (Either [(QName,a)] String)
 analyzeInterface analysis moduleName =
   analyzeGeneric analysis moduleName
   >>= return . either (Left . publicListFromProgInfo) Right
@@ -212,7 +217,7 @@ serverLoop :: Socket -> [Handle] -> IO ()
 serverLoop socket1 whandles = do
   --debugMessage 3 "SERVER: serverLoop"
   connection <- waitForSocketAccept socket1 waitTime
-  case connection of 
+  case connection of
     Just (_,handle) -> serverLoopOnHandle socket1 whandles handle
     Nothing -> do
       putStrLn "serverLoop: connection error: time out in waitForSocketAccept"
@@ -259,7 +264,7 @@ serverLoopOnHandle socket1 whandles handle = do
                                       (Just functionName) False >>= sendResult)
                sendAnalysisError
        SetCurryPath path -> do
-         setEnviron "CURRYPATH" path
+         setEnv "CURRYPATH" path
          changeWorkerPath path whandles
          sendServerResult handle ""
          serverLoopOnHandle socket1 whandles handle
@@ -267,7 +272,7 @@ serverLoopOnHandle socket1 whandles handle = do
          stopWorkers whandles
          sendServerResult handle ""
          hClose handle
-         sClose socket1
+         close socket1
          putStrLn "Stop Server"
          removeServerPortNumber
  where
@@ -307,12 +312,12 @@ changeWorkerPath path (handle:whandles) = do
 parseServerMessage :: String -> AnalysisServerMessage
 parseServerMessage message = case words message of
   [] -> ParseError
-  w:ws -> case w of 
+  w:ws -> case w of
     "GetAnalysis" -> GetAnalysis
-    "AnalyzeModule" -> case ws of 
+    "AnalyzeModule" -> case ws of
       s1:s2:s3:[] -> checkFormat s2 $ AnalyzeModule s1 s2 s3 False
       _ -> ParseError
-    "AnalyzeInterface" -> case ws of 
+    "AnalyzeInterface" -> case ws of
       s1:s2:s3:[] -> checkFormat s2 $ AnalyzeModule s1 s2 s3 True
       _ -> ParseError
     "AnalyzeFunction" -> case ws of
@@ -323,12 +328,12 @@ parseServerMessage message = case words message of
       _ -> ParseError
     "AnalyzeDataConstructor" -> case ws of
       s1:s2:s3:s4:[] -> checkFormat s2 $ AnalyzeEntity s1 s2 s3 s4
-      _ -> ParseError  
+      _ -> ParseError
     "SetCurryPath" -> case ws of
       s:[] -> SetCurryPath s
       _ -> ParseError
     "StopServer" -> StopServer
-    _ -> ParseError 
+    _ -> ParseError
  where
   checkFormat fmt msg = if fmt `elem` serverFormats then msg else ParseError
 
@@ -337,4 +342,3 @@ showAnalysisNamesAndFormats :: String
 showAnalysisNamesAndFormats =
   unlines (concatMap (\an -> map ((an++" ")++) serverFormats)
                      registeredAnalysisNames)
-

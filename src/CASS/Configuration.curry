@@ -17,16 +17,17 @@ module CASS.Configuration
  , getDefaultPath, waitTime, numberOfWorkers
  ) where
 
-import System
-import Distribution (curryCompiler)
+import System.Process
+import System.Environment
+import Distribution    (curryCompiler)
 import PropertyFile
-import ReadNumeric
-import FilePath     (FilePath, (</>), (<.>))
-import Directory
+import Numeric
+import System.FilePath (FilePath, (</>), (<.>))
+import System.Directory
 import ReadShowTerm
-import Sort         (mergeSort)
-import Global
-import Char         (isSpace)
+import Sort            (mergeSort)
+import Data.Global
+import Data.Char       (isSpace)
 
 import Analysis.Logging   (debugMessage, setDebugLevel)
 import CASS.PackageConfig (packagePath, packageExecutable, packageVersion)
@@ -128,10 +129,10 @@ updateDebugLevel :: [(String,String)] -> IO ()
 updateDebugLevel properties = do
   let number = lookup "debugLevel" properties
   case number of
-    Just value -> do 
+    Just value -> do
       case (readInt value) of
-        Just (dl,_) -> setDebugLevel dl
-        Nothing -> done
+        [(dl,_)] -> setDebugLevel dl
+        _        -> done
     Nothing -> done
 
 --- Global variable to store the current properties.
@@ -154,7 +155,7 @@ replaceKeyValue k v ((k1,v1):kvs) =
 
 --------------------------------------------------------------------------
 --- Gets the name of file containing the current server port and pid
---- ($HOME has to be set) 
+--- ($HOME has to be set)
 getServerPortFileName :: IO String
 getServerPortFileName = do
   homeDir <- getHomeDirectory
@@ -225,7 +226,7 @@ getWithPrelude =
 
 -- timeout for network message passing: -1 is wait time infinity
 waitTime :: Int
-waitTime = -1  
+waitTime = -1
 
 -- Default number of workers (if the number is not found in the
 -- configuration file).
@@ -236,7 +237,7 @@ defaultWorkers=0
 --- of CURRYPATH).
 getDefaultPath :: IO String
 getDefaultPath = do
-  currypath <- getEnviron "CURRYPATH"
+  currypath <- getEnv "CURRYPATH"
   properties <- getProperties
   let proppath = lookup "path" properties
   return $ case proppath of
@@ -250,8 +251,8 @@ numberOfWorkers = do
   properties <- getProperties
   let number = lookup "numberOfWorkers" properties
   case number of
-    Just value -> do 
-      case (readInt value) of
-        Just (int,_) -> return int
-        Nothing -> return defaultWorkers
-    Nothing -> return defaultWorkers 
+    Just value -> do
+      case readInt value of
+        [(int,_)] -> return int
+        _         -> return defaultWorkers
+    Nothing -> return defaultWorkers
