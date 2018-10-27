@@ -9,7 +9,8 @@
     "dependencies": {
         "cass-analysis": ">= 3.0.0",
         "flatcurry"    : ">= 3.0.0",
-        "xml"          : ">= 3.0.0"
+        "xml"          : ">= 3.0.0",
+        "base"         : ">= 2.0.0"
     },
     "compilerCompatibility": {
         "pakcs": ">= 2.0.0",

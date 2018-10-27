@@ -134,6 +134,7 @@ analyzeModule ananame moduleName enforce aoutformat = do
 --- The analysis must be a registered one if workers are used.
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
+--- Returns either the analysis information or an error message.
 analyzeGeneric :: (Read a, Show a) => Analysis a -> String
                -> IO (Either (ProgInfo a) String)
 analyzeGeneric analysis moduleName = do
@@ -163,6 +164,7 @@ analyzeGeneric analysis moduleName = do
 --- The analysis must be a registered one if workers are used.
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
+--- Returns either the analysis information or an error message.
 analyzePublic :: (Read a, Show a) => Analysis a -> String
               -> IO (Either (ProgInfo a) String)
 analyzePublic analysis moduleName =
