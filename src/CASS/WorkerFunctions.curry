@@ -12,9 +12,8 @@ import qualified Data.Map as Map
 import IOExts
 import Data.List         ( partition )
 import Data.Maybe        ( fromJust )
-import SCC               ( scc )
-import qualified Data.Set.RBTree as RB
 import System.CPUTime    ( getCPUTime )
+import qualified Data.Set.RBTree as RB
 
 import Analysis.Files
 import Analysis.Logging  ( debugMessage, debugString )
@@ -26,6 +25,7 @@ import Analysis.ProgInfo ( ProgInfo, combineProgInfo, emptyProgInfo
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
+import Data.SCC          ( scc )
 
 import CASS.Configuration
 import CASS.FlatCurryDependency ( callsDirectly, dependsDirectlyOnTypes )

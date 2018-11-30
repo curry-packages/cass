@@ -10,6 +10,7 @@
         "cass-analysis": ">= 3.0.0",
         "flatcurry"    : ">= 3.0.0",
         "xml"          : ">= 3.0.0",
+        "scc"          : ">= 2.0.0",
         "base"         : ">= 2.0.0"
     },
     "compilerCompatibility": {
