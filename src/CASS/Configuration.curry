@@ -17,19 +17,19 @@ module CASS.Configuration
  , getDefaultPath, waitTime, numberOfWorkers
  ) where
 
-import System
-import Distribution ( curryCompiler )
-import PropertyFile ( readPropertyFile, updatePropertyFile )
-import ReadNumeric
-import FilePath     ( FilePath, (</>), (<.>) )
+import Char         ( isSpace )
 import Directory
+import Distribution ( curryCompiler )
+import FilePath     ( FilePath, (</>), (<.>) )
+import Global
+import ReadNumeric
 import ReadShowTerm
 import Sort         ( mergeSort )
-import Global
-import Char         ( isSpace )
+import System
 
-import Analysis.Logging   (debugMessage, setDebugLevel)
-import CASS.PackageConfig (packagePath, packageExecutable, packageVersion)
+import Analysis.Logging   ( debugMessage, setDebugLevel )
+import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
+import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 
 systemBanner :: String
 systemBanner =
