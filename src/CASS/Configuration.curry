@@ -6,7 +6,7 @@
 --- the analysis server (which is implicitly started if necessary).
 ---
 --- @author Michael Hanus
---- @version September 2018
+--- @version December 2018
 --------------------------------------------------------------------------
 
 module CASS.Configuration
@@ -18,15 +18,15 @@ module CASS.Configuration
  ) where
 
 import System
-import Distribution (curryCompiler)
-import PropertyFile
+import Distribution ( curryCompiler )
+import PropertyFile ( readPropertyFile, updatePropertyFile )
 import ReadNumeric
-import FilePath     (FilePath, (</>), (<.>))
+import FilePath     ( FilePath, (</>), (<.>) )
 import Directory
 import ReadShowTerm
-import Sort         (mergeSort)
+import Sort         ( mergeSort )
 import Global
-import Char         (isSpace)
+import Char         ( isSpace )
 
 import Analysis.Logging   (debugMessage, setDebugLevel)
 import CASS.PackageConfig (packagePath, packageExecutable, packageVersion)
