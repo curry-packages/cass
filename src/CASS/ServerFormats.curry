@@ -9,10 +9,9 @@
 module CASS.ServerFormats(serverFormats,formatResult) where
 
 import Analysis.ProgInfo
-import FlatCurry.Types(QName,showQNameInModule)
-import Sort(sortBy)
+import FlatCurry.Types   ( QName, showQNameInModule )
+import Data.List         ( sortBy )
 import XML
-import Data.Either
 
 --------------------------------------------------------------------
 --- The supported formats of the analysis server:

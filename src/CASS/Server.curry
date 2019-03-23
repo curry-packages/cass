@@ -5,7 +5,7 @@
 --- by other Curry applications.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version January 2017
+--- @version December 2018
 --------------------------------------------------------------------------
 
 module CASS.Server
@@ -14,21 +14,23 @@ module CASS.Server
   , analyzeGeneric, analyzePublic, analyzeInterface
   ) where
 
-import Numeric            (readNat)
-import Data.Char          (isSpace)
+import Numeric            ( readNat )
+import ReadShowTerm       ( readQTerm, showQTerm )
+import Data.Char          ( isSpace )
+import Control.Monad      ( unless )
 import System.Directory
 import System.FilePath
-import FlatCurry.Types    (QName)
 import System.IO
-import ReadShowTerm       (readQTerm, showQTerm)
-import Network.Socket     (Socket(..), listenOn, listenOnFresh,
-                           close, waitForSocketAccept)
-import System.Process     (system, sleep)
-import System.Environment (setEnv, getArgs)
+import System.Process     ( system, sleep )
+import System.Environment
 
-import Analysis.Logging (debugMessage)
+import Analysis.Logging   ( debugMessage )
 import Analysis.ProgInfo
-import Analysis.Types(Analysis,AOutFormat(..))
+import Analysis.Types     ( Analysis, AOutFormat(..) )
+import FlatCurry.Types    ( QName )
+import Network.Socket     ( Socket(..), listenOn, listenOnFresh
+                          , close, waitForSocketAccept )
+
 import CASS.Configuration
 import CASS.Registry
 import CASS.ServerFormats
@@ -135,8 +137,7 @@ analyzeModule ananame moduleName enforce aoutformat = do
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
 --- Returns either the analysis information or an error message.
-analyzeGeneric :: (Read a, Show a) => Analysis a -> String
-               -> IO (Either (ProgInfo a) String)
+analyzeGeneric :: Analysis a -> String -> IO (Either (ProgInfo a) String)
 analyzeGeneric analysis moduleName = do
   initializeAnalysisSystem
   let (mdir,mname) = splitFileName moduleName
@@ -165,8 +166,7 @@ analyzeGeneric analysis moduleName = do
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
 --- Returns either the analysis information or an error message.
-analyzePublic :: (Read a, Show a) => Analysis a -> String
-              -> IO (Either (ProgInfo a) String)
+analyzePublic :: Analysis a -> String -> IO (Either (ProgInfo a) String)
 analyzePublic analysis moduleName =
   analyzeGeneric analysis moduleName
   >>= return . either (Left . publicProgInfo) Right
@@ -176,8 +176,7 @@ analyzePublic analysis moduleName =
 --- The analysis must be a registered one if workers are used.
 --- If it is a combined analysis, the base analysis must be also
 --- a registered one.
-analyzeInterface :: (Read a, Show a) => Analysis a -> String
-                 -> IO (Either [(QName,a)] String)
+analyzeInterface :: Analysis a -> String -> IO (Either [(QName,a)] String)
 analyzeInterface analysis moduleName =
   analyzeGeneric analysis moduleName
   >>= return . either (Left . publicListFromProgInfo) Right
@@ -207,7 +206,7 @@ startWorkers number workersocket serveraddress workerport handles = do
 
 -- stop all workers at server stop
 stopWorkers :: [Handle] -> IO ()
-stopWorkers [] = done
+stopWorkers [] = return ()
 stopWorkers (handle:whandles) = do
   hPutStrLn handle (showQTerm StopWorker)
   hClose handle
@@ -284,7 +283,7 @@ serverLoopOnHandle socket1 whandles handle = do
     serverLoopOnHandle socket1 whandles handle
 
   sendAnalysisError err = do
-    sendServerError handle ("ERROR in analysis server: "++showError err)
+    sendServerError handle ("ERROR in analysis server: "++ show err)
     serverLoopOnHandle socket1 whandles handle
 
 -- Send a server result in the format "ok <n>\n<result text>" where <n>
@@ -305,7 +304,7 @@ sendServerError handle errstring = do
 
 -- Inform the worker threads about a given changed library search path
 changeWorkerPath :: String -> [Handle] -> IO ()
-changeWorkerPath _ [] = done
+changeWorkerPath _ [] = return ()
 changeWorkerPath path (handle:whandles) = do
   hPutStrLn handle (showQTerm (ChangePath path))
   changeWorkerPath path whandles

@@ -3,17 +3,16 @@
 --- In particular, it contains some simple fixpoint computations.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version September 2018
+--- @version January 2019
 --------------------------------------------------------------------------
 
 module CASS.WorkerFunctions where
 
-import qualified Data.Map as Map
 import IOExts
+import Prelude hiding    ( empty )
 import Data.List         ( partition )
 import Data.Maybe        ( fromJust )
 import System.CPUTime    ( getCPUTime )
-import qualified Data.Set.RBTree as RB
 
 import Analysis.Files
 import Analysis.Logging  ( debugMessage, debugString )
@@ -21,11 +20,13 @@ import Analysis.Types    ( Analysis(..), isSimpleAnalysis, isCombinedAnalysis
                          , analysisName, startValue)
 import Analysis.ProgInfo ( ProgInfo, combineProgInfo, emptyProgInfo
                          , publicProgInfo, lookupProgInfo, lists2ProgInfo
-                         , publicListFromProgInfo, showProgInfo )
+                         , equalProgInfo, publicListFromProgInfo, showProgInfo )
+import Data.FiniteMap
 import FlatCurry.Types
 import FlatCurry.Files
 import FlatCurry.Goodies
 import Data.SCC          ( scc )
+import Data.Set.RBTree as Set ( SetRBT, member, empty, insert, null )
 
 import CASS.Configuration
 import CASS.FlatCurryDependency ( callsDirectly, dependsDirectlyOnTypes )
@@ -41,14 +42,13 @@ newProgInfoStoreRef = newIORef []
 -----------------------------------------------------------------------
 --- Analyze a list of modules (in the given order) with a given analysis.
 --- The analysis results are stored in the corresponding analysis result files.
-analysisClient :: (Eq a, Read a, Show a) => Analysis a -> [String] -> IO ()
+analysisClient :: Eq a => Analysis a -> [String] -> IO ()
 analysisClient analysis modnames = do
   store <- newIORef []
   fpmethod <- getFPMethod
-  mapIO_ (analysisClientWithStore store analysis fpmethod) modnames
+  mapM_ (analysisClientWithStore store analysis fpmethod) modnames
 
-analysisClientWithStore :: (Eq a, Read a, Show a) => IORef (ProgInfoStore a)
-                        -> Analysis a -> String
+analysisClientWithStore :: Eq a => IORef (ProgInfoStore a) -> Analysis a -> String
                         -> String -> IO ()
 analysisClientWithStore store analysis fpmethod moduleName = do
   prog        <- readNewestFlatCurry moduleName
@@ -78,7 +78,7 @@ analysisClientWithStore store analysis fpmethod moduleName = do
 
 -- Loads analysis results for a list of modules where already read results
 -- are stored in an IORef.
-getInterfaceInfosWS :: Read a => IORef (ProgInfoStore a) -> String -> [String]
+getInterfaceInfosWS :: IORef (ProgInfoStore a) -> String -> [String]
                     -> IO (ProgInfo a)
 getInterfaceInfosWS _ _ [] = return emptyProgInfo
 getInterfaceInfosWS store anaName (mod:mods) = do
@@ -194,17 +194,17 @@ runAnalysis analysis prog importInfos startvals fpmethod = do
         SimpleTypeAnalysis _ _ ->
          (definedTypes, typeInfos2ProgInfo defaultTypes deflts)
         SimpleConstructorAnalysis _ _ -> -- there are no external constructors
-         if null deflts then (prog,emptyProgInfo)
+         if Prelude.null deflts then (prog,emptyProgInfo)
          else error "SimpleConstructorAnalysis with default values!"
         DependencyFuncAnalysis _ _ _ ->
          (definedFuncs, funcInfos2ProgInfo defaultFuncs deflts)
         DependencyTypeAnalysis _ _ _ ->
          (definedTypes, typeInfos2ProgInfo defaultTypes deflts)
         SimpleModuleAnalysis _ _ ->
-         if null deflts then (definedFuncs, emptyProgInfo)
+         if Prelude.null deflts then (definedFuncs, emptyProgInfo)
                         else error defaultNotEmptyError
         DependencyModuleAnalysis _ _ ->
-         if null deflts then (definedFuncs, emptyProgInfo)
+         if Prelude.null deflts then (definedFuncs, emptyProgInfo)
                         else error defaultNotEmptyError
         _ -> error "Internal error in WorkerFunctions.runAnalysis"
   let result = executeAnalysis analysis progWithoutDefaults
@@ -260,18 +260,18 @@ executeAnalysis (DependencyFuncAnalysis _ _ anaFunc) prog
      in simpleIteration anaFunc funcName declsWithDeps importInfos startinfo
   "wlist" ->
     let declsWithDeps = map addCalledFunctions (progFuncs prog)
-     in funcInfos2ProgInfo prog $ Map.toList $
-          wlIteration anaFunc funcName declsWithDeps [] RB.empty
-                      importInfos (Map.fromList startvals)
+     in funcInfos2ProgInfo prog $ fmToList $
+          wlIteration anaFunc funcName declsWithDeps [] (empty (<))
+                      importInfos (listToFM (<) startvals)
   "wlistscc" ->
     let declsWithDeps = map addCalledFunctions (progFuncs prog)
         -- compute strongly connected components w.r.t. func dependencies:
         sccDecls = scc ((:[]) . funcName . fst) snd declsWithDeps
-     in funcInfos2ProgInfo prog $ Map.toList $
+     in funcInfos2ProgInfo prog $ fmToList $
           foldr (\scc sccstartvals ->
-                   wlIteration anaFunc funcName scc [] RB.empty
+                   wlIteration anaFunc funcName scc [] (empty (<))
                                importInfos sccstartvals)
-                (Map.fromList startvals)
+                (listToFM (<) startvals)
                 (reverse sccDecls)
   _ -> error unknownFixpointMessage
 
@@ -284,18 +284,18 @@ executeAnalysis (DependencyTypeAnalysis _ _ anaType) prog
      in simpleIteration anaType typeName declsWithDeps importInfos startinfo
   "wlist" ->
     let declsWithDeps = map addUsedTypes (progTypes prog)
-     in typeInfos2ProgInfo prog $ Map.toList $
-          wlIteration anaType typeName declsWithDeps [] RB.empty
-                      importInfos (Map.fromList startvals)
+     in typeInfos2ProgInfo prog $ fmToList $
+          wlIteration anaType typeName declsWithDeps [] (empty (<))
+                      importInfos (listToFM (<) startvals)
   "wlistscc" ->
     let declsWithDeps = map addUsedTypes (progTypes prog)
         -- compute strongly connected components w.r.t. type dependencies:
         sccDecls = scc ((:[]) . typeName . fst) snd declsWithDeps
-     in typeInfos2ProgInfo prog $ Map.toList $
+     in typeInfos2ProgInfo prog $ fmToList $
           foldr (\scc sccstartvals ->
-                   wlIteration anaType typeName scc [] RB.empty
+                   wlIteration anaType typeName scc [] (empty (<))
                                importInfos sccstartvals)
-                (Map.fromList startvals)
+                (listToFM (<) startvals)
                 (reverse sccDecls)
   _ -> error unknownFixpointMessage
 -- These cases are handled elsewhere:
@@ -349,31 +349,31 @@ simpleIteration analysis nameOf declsWithDeps importInfos currvals =
 
       newproginfo = lists2ProgInfo newvals
 
-  in if currvals == newproginfo
+  in if equalProgInfo currvals newproginfo
      then currvals
      else simpleIteration analysis nameOf declsWithDeps importInfos newproginfo
 
 wlIteration :: Eq a => (t -> [(QName,a)] -> a) -> (t -> QName)
-            -> [(t,[QName])] -> [(t,[QName])] -> RB.SetRBT QName
-            -> ProgInfo a -> Map.Map QName a -> Map.Map QName a
+            -> [(t,[QName])] -> [(t,[QName])] -> SetRBT QName
+            -> ProgInfo a -> FM QName a -> FM QName a
 --wlIteration analysis nameOf declsToDo declsDone changedEntities
 --            importInfos currvals
 
 wlIteration analysis nameOf [] alldecls changedEntities importInfos currvals =
-  if RB.null changedEntities
+  if Set.null changedEntities
   then currvals -- no todos, no changed values, so we are done:
   else -- all declarations processed, compute todos for next round:
        let (declsToDo,declsDone) =
-              partition (\ (_,calls) -> any (`RB.member` changedEntities) calls)
+              partition (\ (_,calls) -> any (`member` changedEntities) calls)
                         alldecls
-        in wlIteration analysis nameOf declsToDo declsDone RB.empty
+        in wlIteration analysis nameOf declsToDo declsDone (empty (<))
                        importInfos currvals
 -- process a single declaration:
 wlIteration analysis nameOf (decldeps@(decl,calls):decls) declsDone
             changedEntities importInfos currvals =
   let decname = nameOf decl
 
-      lookupVal qn = maybe (fromJust (Map.lookup qn currvals)) id
+      lookupVal qn = maybe (fromJust (lookupFM currvals qn)) id
                            (lookupProgInfo qn importInfos)
       oldval = lookupVal decname
       newval = analysis decl (map (\qn -> (qn, lookupVal qn)) calls)
@@ -381,8 +381,8 @@ wlIteration analysis nameOf (decldeps@(decl,calls):decls) declsDone
       then wlIteration analysis nameOf decls (decldeps:declsDone)
                        changedEntities importInfos currvals
       else wlIteration analysis nameOf decls (decldeps:declsDone)
-                       (RB.insert decname changedEntities) importInfos
-                       (Map.adjust (const newval) decname currvals)
+                       (insert decname changedEntities) importInfos
+                       (updFM currvals decname (const newval))
 
 
 ---------------------------------------------------------------------

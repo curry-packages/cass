@@ -8,8 +8,10 @@
 module CASS.FlatCurryDependency(dependsDirectlyOnTypes,callsDirectly) where
 
 import FlatCurry.Types
-import Data.List
-import qualified Data.Set.RBTree as RB
+import Data.List       ( nub )
+import Prelude hiding  (empty)
+
+import Data.Set.RBTree ( SetRBT, empty, insert, toList, union)
 
 --- Return the type constructors occurring in a type declaration.
 dependsDirectlyOnTypes :: TypeDecl -> [QName]
@@ -31,26 +33,26 @@ tconsOf (ForallType _ te)   = tconsOf te
 -----------------------------------------------------------------------------
 -- list of direct dependencies for a function
 callsDirectly :: FuncDecl -> [QName]
-callsDirectly fun = RB.toList (snd (directlyDependent fun))
+callsDirectly fun = toList (snd (directlyDependent fun))
 
 -- set of direct dependencies for a function
-directlyDependent :: FuncDecl -> (QName,RB.SetRBT QName)
+directlyDependent :: FuncDecl -> (QName,SetRBT QName)
 directlyDependent (Func f _ _ _ (Rule _ e))   = (f,funcSetOfExpr e)
-directlyDependent (Func f _ _ _ (External _)) = (f,RB.empty)
+directlyDependent (Func f _ _ _ (External _)) = (f,emptySet)
 
 -- Gets the set of all functions (including partially applied functions)
 -- called in an expression:
-funcSetOfExpr :: Expr -> RB.SetRBT QName
-funcSetOfExpr (Var _) = RB.empty
-funcSetOfExpr (Lit _) = RB.empty
+funcSetOfExpr :: Expr -> SetRBT QName
+funcSetOfExpr (Var _) = emptySet
+funcSetOfExpr (Lit _) = emptySet
 funcSetOfExpr (Comb ct f es) =
   if isConstructorComb ct then unionMap funcSetOfExpr es
-                          else RB.insert f (unionMap funcSetOfExpr es)
+                          else insert f (unionMap funcSetOfExpr es)
 funcSetOfExpr (Free _ e) = funcSetOfExpr e
-funcSetOfExpr (Let bs e) = RB.union (unionMap (funcSetOfExpr . snd) bs)
+funcSetOfExpr (Let bs e) = union (unionMap (funcSetOfExpr . snd) bs)
                                     (funcSetOfExpr e)
-funcSetOfExpr (Or e1 e2) = RB.union (funcSetOfExpr e1) (funcSetOfExpr e2)
-funcSetOfExpr (Case _ e bs) = RB.union (funcSetOfExpr e)
+funcSetOfExpr (Or e1 e2) = union (funcSetOfExpr e1) (funcSetOfExpr e2)
+funcSetOfExpr (Case _ e bs) = union (funcSetOfExpr e)
                                        (unionMap funcSetOfBranch bs)
  where funcSetOfBranch (Branch _ be) = funcSetOfExpr be
 funcSetOfExpr (Typed e _) = funcSetOfExpr e
@@ -61,8 +63,11 @@ isConstructorComb ct = case ct of
   ConsPartCall _ -> True
   _              -> False
 
-unionMap :: (a -> RB.SetRBT QName) -> [a] -> RB.SetRBT QName
-unionMap f = foldr RB.union RB.empty . map f
+unionMap :: (a -> SetRBT QName) -> [a] -> SetRBT QName
+unionMap f = foldr union emptySet . map f
+
+emptySet :: SetRBT QName
+emptySet = empty leqQName
 
 leqQName :: QName -> QName -> Bool
 leqQName (m1,n1) (m2,n2) = m1++('.':n1) <= m2++('.':n2)

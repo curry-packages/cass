@@ -16,9 +16,9 @@ module CASS.Registry
 import FlatCurry.Types
 import FlatCurry.Goodies(progImports)
 import System.IO
+import Control.Monad
 import IOExts
 import XML
-import Data.Either
 
 import Analysis.Logging (debugMessage)
 import Analysis.Files (getImports, loadCompleteAnalysis)
@@ -95,8 +95,7 @@ registeredAnalysis =
 --- by the server/client analysis tool from a given analysis and
 --- analysis show function. The first argument is a short title for the
 --- analysis.
-cassAnalysis :: (Eq a, Read a, Show a) => String -> Analysis a
-             -> (AOutFormat -> a -> String)
+cassAnalysis :: Eq a => String -> Analysis a -> (AOutFormat -> a -> String)
              -> RegisteredAnalysis
 cassAnalysis title analysis showres =
   RegAna (analysisName analysis)
@@ -166,7 +165,7 @@ lookupRegAnaServer aname =
 -- Look up a registered analysis worker with a given analysis name.
 lookupRegAnaWorker :: String -> ([String] -> IO ())
 lookupRegAnaWorker aname =
-  maybe (const done) regAnaWorker (lookupRegAna aname registeredAnalysis)
+  maybe (const (return ())) regAnaWorker (lookupRegAna aname registeredAnalysis)
 
 --------------------------------------------------------------------
 -- Run an analysis with a given name on a given module with a list
@@ -180,7 +179,7 @@ runAnalysisWithWorkers ananame aoutformat enforce handles moduleName =
 -- of workers identified by their handles but do not load analysis results.
 runAnalysisWithWorkersNoLoad :: String -> [Handle] -> String -> IO ()
 runAnalysisWithWorkersNoLoad ananame handles moduleName =
-  (lookupRegAnaServer ananame) moduleName False handles Nothing >> done
+  () <$ (lookupRegAnaServer ananame) moduleName False handles Nothing
 
 --- Generic operation to analyze a module.
 --- The parameters are the analysis, the show operation for analysis results,
@@ -191,8 +190,7 @@ runAnalysisWithWorkersNoLoad ananame handles moduleName =
 --- and returned (if the flag is false, the result contains the empty
 --- program information).
 --- An error occurred during the analysis is returned as `(Right ...)`.
-analyzeAsString :: (Read a, Show a) => Analysis a
-                -> (AOutFormat -> a -> String) -> String -> Bool
+analyzeAsString :: Analysis a -> (AOutFormat->a->String) -> String -> Bool
                 -> [Handle] -> Maybe AOutFormat
                 -> IO (Either (ProgInfo String) String)
 analyzeAsString analysis showres modname enforce handles mbaoutformat = do
@@ -209,8 +207,7 @@ analyzeAsString analysis showres modname enforce handles mbaoutformat = do
 --- and returned (if the flag is false, the result contains the empty
 --- program information).
 --- An error occurred during the analysis is returned as `(Right ...)`.
-analyzeMain :: (Read a, Show a) => Analysis a -> String -> [Handle]
-            -> Bool -> Bool
+analyzeMain :: Analysis a -> String -> [Handle] -> Bool -> Bool
             -> IO (Either (ProgInfo a) String)
 analyzeMain analysis modname handles enforce load = do
   let ananame = analysisName analysis
@@ -258,17 +255,17 @@ prepareCombinedAnalysis analysis moduleName depmods handles =
     then do
       -- the directly imported interface information might be required...
       importedModules <- getImports moduleName
-      mapIO_ (\basename ->
-                mapIO_ (runAnalysisWithWorkersNoLoad basename handles)
+      mapM_ (\basename ->
+                mapM_ (runAnalysisWithWorkersNoLoad basename handles)
                        (importedModules++[moduleName]))
              baseAnaNames
     else
       -- for a dependency analysis, the information of all implicitly
       -- imported modules might be required:
-      mapIO_ (\baseaname ->
-                mapIO_ (runAnalysisWithWorkersNoLoad baseaname handles) depmods)
+      mapM_ (\baseaname ->
+                mapM_ (runAnalysisWithWorkersNoLoad baseaname handles) depmods)
              baseAnaNames
-  else done
+  else return ()
  where
    baseAnaNames = baseAnalysisNames analysis
 

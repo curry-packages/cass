@@ -8,8 +8,8 @@
 
 module CASS.Doc(getAnalysisDoc) where
 
-import System.Directory      (doesFileExist)
-import System.FilePath       ((</>), (<.>))
+import Directory      (doesFileExist)
+import FilePath       ((</>), (<.>))
 
 import CASS.Configuration  (docDir)
 
@@ -24,5 +24,5 @@ getAnalysisDoc aname = do
   docfileexists <- doesFileExist docfilename
   if docfileexists then readFile docfilename >>= return . Just
                    else return Nothing
-
+                   
 --------------------------------------------------------------------------

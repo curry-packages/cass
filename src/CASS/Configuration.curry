@@ -6,7 +6,7 @@
 --- the analysis server (which is implicitly started if necessary).
 ---
 --- @author Michael Hanus
---- @version September 2018
+--- @version December 2018
 --------------------------------------------------------------------------
 
 module CASS.Configuration
@@ -17,20 +17,20 @@ module CASS.Configuration
  , getDefaultPath, waitTime, numberOfWorkers
  ) where
 
-import System.Process
-import System.Environment
-import Distribution    (curryCompiler)
-import PropertyFile
-import Numeric
-import System.FilePath (FilePath, (</>), (<.>))
+import Data.Char           ( isSpace )
+import Data.List           ( sort )
 import System.Directory
+import System.Distribution ( curryCompiler )
+import System.FilePath     ( FilePath, (</>), (<.>) )
+import System.Environment
+import System.Process
+import Global
+import Numeric
 import ReadShowTerm
-import Sort            (mergeSort)
-import Data.Global
-import Data.Char       (isSpace)
 
-import Analysis.Logging   (debugMessage, setDebugLevel)
-import CASS.PackageConfig (packagePath, packageExecutable, packageVersion)
+import Analysis.Logging   ( debugMessage, setDebugLevel )
+import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
+import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 
 systemBanner :: String
 systemBanner =
@@ -74,7 +74,7 @@ installPropertyFile :: IO ()
 installPropertyFile = do
   fname <- propertyFileName
   pfexists <- doesFileExist fname
-  if pfexists then done else do
+  if pfexists then return () else do
     copyFile defaultPropertyFileName fname
     putStrLn ("New analysis configuration file '"++fname++"' installed.")
 
@@ -87,23 +87,23 @@ updateRCFile :: IO ()
 updateRCFile = do
   hashomedir <- getHomeDirectory >>= doesDirectoryExist
   if not hashomedir
-   then readPropertiesAndStoreLocally >> done
+   then readPropertiesAndStoreLocally >> return ()
    else do
      installPropertyFile
      userprops <- readPropertiesAndStoreLocally
      distprops <- readPropertyFile defaultPropertyFileName
-     if (rcKeys userprops == rcKeys distprops) then done else do
+     if (rcKeys userprops == rcKeys distprops) then return () else do
        rcName    <- propertyFileName
        putStrLn $ "Updating \"" ++ rcName ++ "\"..."
        renameFile rcName $ rcName <.> "bak"
        copyFile defaultPropertyFileName rcName
-       mapIO_ (\ (n, v) -> maybe done
-                 (\uv -> if uv==v then done else updatePropertyFile rcName n uv)
+       mapM_ (\ (n, v) -> maybe (return ())
+                 (\uv -> if uv==v then return () else updatePropertyFile rcName n uv)
                  (lookup n userprops))
               distprops
 
 rcKeys :: [(String, String)] -> [String]
-rcKeys = mergeSort . map fst
+rcKeys = sort . map fst
 
 --- Reads the user property file or, if it does not exist,
 --- the default property file of CASS,
@@ -130,10 +130,10 @@ updateDebugLevel properties = do
   let number = lookup "debugLevel" properties
   case number of
     Just value -> do
-      case (readInt value) of
+      case readInt value of
         [(dl,_)] -> setDebugLevel dl
-        _        -> done
-    Nothing -> done
+        _        -> return ()
+    Nothing -> return ()
 
 --- Global variable to store the current properties.
 currProps :: Global (Maybe [(String,String)])

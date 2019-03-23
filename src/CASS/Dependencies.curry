@@ -8,12 +8,12 @@
 module CASS.Dependencies(getModulesToAnalyze,reduceDependencies) where
 
 import FlatCurry.Types
-import FlatCurry.Goodies  (progImports)
-import ReadShowTerm       (readQTerm)
-import System.Directory   (doesFileExist,getModificationTime)
-import Data.Maybe         (fromMaybe)
-import Data.List          (delete)
-import Data.Time          (ClockTime)
+import FlatCurry.Goodies (progImports)
+import ReadShowTerm      (readQTerm)
+import System.Directory  (doesFileExist,getModificationTime)
+import Data.Maybe        (fromMaybe)
+import Data.List         (delete)
+import Data.Time(ClockTime)
 
 import Analysis.Logging   ( debugMessage )
 import Analysis.Types
@@ -43,9 +43,9 @@ getModulesToAnalyze enforce analysis moduleName =
      debugMessage 3 ("Complete module list: "++ show moduleList)
      let impmods = map fst moduleList
      storeImportModuleList moduleName impmods
-     sourceTimeList <- mapIO getSourceFileTime        impmods
-     fcyTimeList    <- mapIO getFlatCurryFileTime     impmods
-     anaTimeList    <- mapIO (getAnaFileTime ananame) impmods
+     sourceTimeList <- mapM getSourceFileTime        impmods
+     fcyTimeList    <- mapM getFlatCurryFileTime     impmods
+     anaTimeList    <- mapM (getAnaFileTime ananame) impmods
      let (modulesToDo,modulesUpToDate) =
             findModulesToAnalyze moduleList
                                  anaTimeList sourceTimeList fcyTimeList ([],[])
@@ -95,9 +95,9 @@ isAnalysisValid ananame modname =
       if itime>=stime
        then do
         implist <- readFile importListFile >>= return . readQTerm
-        sourceTimeList <- mapIO getSourceFileTime        implist
-        fcyTimeList    <- mapIO getFlatCurryFileTime     implist
-        anaTimeList    <- mapIO (getAnaFileTime ananame) implist
+        sourceTimeList <- mapM getSourceFileTime        implist
+        fcyTimeList    <- mapM getFlatCurryFileTime     implist
+        anaTimeList    <- mapM (getAnaFileTime ananame) implist
         return (all (\ (x,y,z) -> isAnalysisFileTimeNewer x y z)
                     (zip3 (map snd anaTimeList)
                           (map (Just . snd) sourceTimeList)

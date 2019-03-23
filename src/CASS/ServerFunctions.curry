@@ -2,31 +2,30 @@
 --- Implementation of the analysis computations on the server side
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version January 2015
+--- @version December 2018
 ------------------------------------------------------------------------
 
 -- analysis computations on the server side
 
 module CASS.ServerFunctions where
 
-import FlatCurry.Types    (QName)
-import FlatCurry.Goodies  (progImports)
-import Network.Socket     (Socket(..),listenOnFresh,close,waitForSocketAccept)
-import System.IO          (Handle(..),hClose,hFlush,hGetLine,hPutStrLn,
-                           hWaitForInput,hWaitForInputs)
-import ReadShowTerm       (readQTerm,showQTerm)
-import System.Process     (system,sleep)
-import System.Directory   (doesFileExist,getModificationTime)
-import Data.Maybe         (fromMaybe)
-import Data.List          (delete)
-import Data.Time          (ClockTime)
-import XML                (showXmlDoc,xml)
+import System.IO          ( Handle(..), hClose, hFlush, hGetLine, hPutStrLn
+                          , hWaitForInput, hWaitForInputs )
+import System.Process     ( system, sleep )
+import System.Directory   ( doesFileExist, getModificationTime )
+import Data.Maybe         ( fromMaybe )
+import Data.List          ( delete )
+import Data.Time          ( ClockTime )
+import XML                ( showXmlDoc, xml )
+import ReadShowTerm       ( readQTerm, showQTerm )
 
-import Analysis.Logging   (debugMessage)
+import FlatCurry.Types    ( QName )
+import FlatCurry.Goodies  ( progImports )
+import Analysis.Logging   ( debugMessage )
 import Analysis.Types
 import Analysis.ProgInfo
 import CASS.Dependencies
-import CASS.Configuration (waitTime)
+import CASS.Configuration ( waitTime )
 
 data WorkerMessage = Task String String | ChangePath String | StopWorker
 
