@@ -2,26 +2,26 @@
 --- This is the main module to start the executable of the analysis system.
 ---
 --- @author Michael Hanus
---- @version December 2018
+--- @version April 2021
 --------------------------------------------------------------------------
 
 module CASS.Main ( main ) where
 
-import Char           ( toLower )
-import FilePath       ( (</>), (<.>) )
-import GetOpt
-import List           ( isPrefixOf )
-import ReadNumeric    ( readNat )
-import ReadShowTerm   ( readQTerm )
-import Sort           ( sort )
-import System         ( exitWith, getArgs )
+import Data.Char             ( toLower )
+import Data.List             ( isPrefixOf, sort )
+import Control.Monad         ( when, unless )
+import System.FilePath       ( (</>), (<.>) )
+import System.Process        ( exitWith )
+import System.Environment    ( getArgs )
+import System.Console.GetOpt
+import Numeric               ( readNat )
 
 import Analysis.Files     ( deleteAllAnalysisFiles )
 import Analysis.Logging   ( debugMessage )
 import CASS.Doc           ( getAnalysisDoc )
-import CASS.Server
+import CASS.Server        ( analyzeModuleAndPrint, mainServer )
 import CASS.Configuration
-import CASS.Registry
+import CASS.Registry      ( registeredAnalysisInfos, registeredAnalysisNames )
 import CASS.Worker        ( startWorker )
 import System.CurryPath   ( stripCurrySuffix )
 
@@ -35,7 +35,7 @@ main = do
   let opts = foldl (flip id) defaultOptions funopts
   unless (null opterrors)
          (putStr (unlines opterrors) >> putStr usageText >> exitWith 1)
-  initializeAnalysisSystem
+  cconfig <- readRCFile
   when (optHelp opts) (printHelp args >> exitWith 1)
   when (optDelete opts) (deleteFiles args)
   when ((optServer opts && not (null args)) ||
@@ -43,21 +43,26 @@ main = do
        (error "Illegal arguments (try `-h' for help)" >> exitWith 1)
   when (optWorker opts && length args /= 2)
        (error "Illegal arguments (try `-h' for help)" >> exitWith 1)
-  mapIO_ (\ (k,v) -> updateCurrentProperty k v) (optProp opts)
-  let verb = optVerb opts
-  when (verb >= 0) (updateCurrentProperty "debugLevel" (show verb))
-  debugMessage 1 systemBanner
+  let cconfig1 = foldr (uncurry updateProperty) cconfig (optProp opts)
+      verb     = optVerb opts
+      cconfig2 = if verb >= 0
+                   then setDebugLevel verb cconfig1
+                   else cconfig1
+      dl       = debugLevel cconfig2
+  debugMessage dl 1 systemBanner
   if optServer opts
-   then mainServer (let p = optPort opts in if p == 0 then Nothing else Just p)
+   then mainServer cconfig2
+                   (let p = optPort opts in if p == 0 then Nothing else Just p)
    else
      if optWorker opts
-       then startWorker (head args) (readQTerm (args!!1))
+       then startWorker cconfig2 (head args) (read (args!!1))
        else do
          let [ananame,mname] = args
          fullananame <- checkAnalysisName ananame
-         putStrLn $ "Computing results for analysis `" ++ fullananame ++ "'"
-         analyzeModuleAsText fullananame (stripCurrySuffix mname)
-                             (optAll opts) (optReAna opts) >>= putStrLn
+         debugMessage dl 1 $
+           "Computing results for analysis `" ++ fullananame ++ "'"
+         analyzeModuleAndPrint cconfig2 fullananame (stripCurrySuffix mname)
+                               (optAll opts) (optReAna opts)
  where
   deleteFiles args = case args of
     [aname] -> do fullaname <- checkAnalysisName aname
@@ -142,11 +147,9 @@ options =
            "set property (of ~/.curryanalysisrc)\n`name' as `v'"
   ]
  where
-  safeReadNat opttrans s opts =
-   let numError = error "Illegal number argument (try `-h' for help)" in
-    maybe numError
-          (\ (n,rs) -> if null rs then opttrans n opts else numError)
-          (readNat s)
+  safeReadNat opttrans s opts = case readNat s of
+     [(n,"")] -> opttrans n opts
+     _        -> error "Illegal number argument (try `-h' for help)"
 
   checkVerb n opts = if n>=0 && n<5
                      then opts { optVerb = n }
@@ -164,7 +167,7 @@ options =
 printHelp :: [String] -> IO ()
 printHelp args =
   if null args
-   then putStrLn usageText
+   then putStrLn $ systemBanner ++ "\n" ++ usageText
    else do aname <- checkAnalysisName (head args)
            getAnalysisDoc aname >>=
              maybe (putStrLn $
@@ -174,9 +177,9 @@ printHelp args =
 -- Help text
 usageText :: String
 usageText =
-  usageInfo ("Usage: curry analyze <options> <analysis name> <module name>\n" ++
-             "   or: curry analyze <options> [-s|--server]\n" ++
-             "   or: curry analyze [-w|--worker] <host> <port>\n")
+  usageInfo ("Usage: cass <options> <analysis name> <module name>\n" ++
+             "   or: cass <options> [-s|--server]\n" ++
+             "   or: cass [-w|--worker] <host> <port>\n")
             options ++
   unlines ("" : "Registered analyses names:" :
            "(use option `-h <analysis name>' for more documentation)" :

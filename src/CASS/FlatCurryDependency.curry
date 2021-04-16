@@ -8,7 +8,8 @@
 module CASS.FlatCurryDependency(dependsDirectlyOnTypes,callsDirectly) where
 
 import FlatCurry.Types
-import List ( nub )
+import Data.List       ( nub )
+import Prelude hiding  (empty)
 
 import Data.Set.RBTree ( SetRBT, empty, insert, toList, union)
 
@@ -18,8 +19,9 @@ dependsDirectlyOnTypes :: TypeDecl -> [QName]
 dependsDirectlyOnTypes (Type _ _ _ consDeclList) =
   nub (concatMap (\ (Cons _ _ _ typeExprs) -> concatMap tconsOf typeExprs)
                  consDeclList)
-
 dependsDirectlyOnTypes (TypeSyn _ _ _ typeExpr) = nub (tconsOf typeExpr)
+dependsDirectlyOnTypes (TypeNew _ _ _ (NewCons _ _ typeExpr)) =
+  nub (tconsOf typeExpr)
 
 
 tconsOf :: TypeExpr -> [QName]

@@ -70,12 +70,8 @@ rev :: [a] -> [a]
 rev []     = []
 rev (x:xs) = append (rev xs) [x]
 
-fromTo :: Int -> Int -> [Int]
-fromTo m n | m <= n    = m : fromTo (m+1) n
-           | otherwise = []
-
 main :: Int -> Int -> [Int]
-main m n = rev (fromTo m n)
+main x y = rev [x .. y]
 \end{curry}
 %
 CASS supports three different usage modes to analyze this program.
@@ -92,7 +88,6 @@ when CASS is started for the first time.}
 \begin{curry}
 > cass Demand Rev
 append : demanded arguments: 1
-fromTo : demanded arguments: 1,2
 main : demanded arguments: 1,2
 rev : demanded arguments: 1
 \end{curry}
@@ -254,16 +249,15 @@ Overlapping Text
 Deterministic XML
 ...
 > AnalyzeModule Demand Text Rev
-ok 4
+ok 3
 append : demanded arguments: 1
-fromTo : demanded arguments: 1,2
 main : demanded arguments: 1,2
 rev : demanded arguments: 1
 > AnalyzeModule Demand CurryTerm Rev
 ok 1
-[(("Rev","append"),"demanded arguments: 1"),(("Rev","fromTo"),"demanded arguments: 1,2"),(("Rev","main"),"demanded arguments: 1,2"),(("Rev","rev"),"demanded arguments: 1")]
+[(("Rev","append"),"demanded arguments: 1"),(("Rev","main"),"demanded arguments: 1,2"),(("Rev","rev"),"demanded arguments: 1")]
 > AnalyzeModule Demand XML Rev
-ok 24
+ok 19
 <?xml version="1.0" standalone="yes"?>
 
 <results>
@@ -271,11 +265,6 @@ ok 24
     <module>Rev</module>
     <name>append</name>
     <result>demanded arguments: 1</result>
-  </operation>
-  <operation>
-    <module>Rev</module>
-    <name>fromTo</name>
-    <result>demanded arguments: 1,2</result>
   </operation>
   <operation>
     <module>Rev</module>
