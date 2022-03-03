@@ -76,6 +76,8 @@ registeredAnalysis =
   ,cassAnalysis "Productive operations"    productivityAnalysis showProductivity
   ,cassAnalysis "Sensible types"             sensibleType     showSensible
   ,cassAnalysis "Sibling constructors"       siblingCons      showSibling
+  ,cassAnalysis "Sibling constructors with corresponding type declaration"
+                                             siblingConsAndDecl showSiblingAndDecl
   ,cassAnalysis "Required value"             reqValueAnalysis showAFType
   ,cassAnalysis "Required value sets"        RVS.reqValueAnalysis RVS.showAFType
   ,cassAnalysis "Residuating operations"     residuationAnalysis showResInfo
