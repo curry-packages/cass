@@ -66,6 +66,8 @@ registeredAnalysis =
   ,cassAnalysis "Solution completeness"      solcompAnalysis  showSolComplete
   ,cassAnalysis "Pattern completeness"       patCompAnalysis  showComplete
   ,cassAnalysis "Totally defined operations" totalAnalysis    showTotally
+  ,cassAnalysis "Totally and functionally defined operations"
+                                             totalFuncAnalysis showTotalFunc
   ,cassAnalysis "Indeterministic operations" indetAnalysis    showIndet
   ,cassAnalysis "Demanded arguments"         demandAnalysis   showDemand
   ,cassAnalysis "Groundness"                 groundAnalysis   showGround
