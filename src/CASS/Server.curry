@@ -5,13 +5,13 @@
 --- by other Curry applications.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version April 2021
+--- @version January 2023
 --------------------------------------------------------------------------
 
 module CASS.Server
   (mainServer, initializeAnalysisSystem, analyzeModuleAndPrint
   , analyzeModuleForBrowser, analyzeFunctionForBrowser
-  , analyzeGeneric, analyzePublic, analyzeInterface
+  , analyzeGeneric, analyzeGenericWithDebug, analyzePublic, analyzeInterface
   ) where
 
 import Numeric            ( readNat )
@@ -139,8 +139,21 @@ analyzeModule cconfig ananame enforce aoutformat modname = do
 --- Returns either the analysis information or an error message.
 analyzeGeneric :: (Read a, Show a)
                => Analysis a -> String -> IO (Either (ProgInfo a) String)
-analyzeGeneric analysis moduleName = do
-  cconfig <- readRCFile
+analyzeGeneric = analyzeGenericWithDebug Nothing
+
+--- Start the analysis system with a particular analysis and
+--- an optional debug level (first argument).
+--- The analysis must be a registered one if workers are used.
+--- If it is a combined analysis, the base analysis must be also
+--- a registered one. The options are read from the rc file.
+--- Returns either the analysis information or an error message.
+analyzeGenericWithDebug :: (Read a, Show a) =>
+  Maybe Int -> Analysis a -> String -> IO (Either (ProgInfo a) String)
+analyzeGenericWithDebug debuglevel analysis moduleName = do
+  configrc <- readRCFile
+  let cconfig = maybe configrc
+                      (\dl -> setDebugLevel dl configrc)
+                      debuglevel
   let (mdir,mname) = splitFileName moduleName
   getDefaultPath cconfig >>= setEnv "CURRYPATH"
   curdir <- getCurrentDirectory
