@@ -3,3 +3,9 @@ cdoc/
 .curry
 .cpm
 src/CASS/PackageConfig.curry
+
+docs/*.aux
+docs/*.pdf
+docs/*.toc
+docs/*.log
+docs/*.out
