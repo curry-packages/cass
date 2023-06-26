@@ -43,6 +43,7 @@ import Analysis.RequiredValue
 import qualified Analysis.RequiredValues as RVS
 import Analysis.RightLinearity
 import Analysis.Residuation
+import qualified Analysis.ResultValues as RVA
 import Analysis.RootReplaced
 import Analysis.SensibleTypes
 import Analysis.SolutionCompleteness
@@ -81,9 +82,11 @@ registeredAnalysis =
   ,cassAnalysis "Sensible types"             sensibleType     showSensible
   ,cassAnalysis "Sibling constructors"       siblingCons      showSibling
   ,cassAnalysis "Sibling constructors with corresponding type declaration"
-                                             siblingConsAndDecl showSiblingAndDecl
+                siblingConsAndDecl showSiblingAndDecl
   ,cassAnalysis "Required value"             reqValueAnalysis showAFType
   ,cassAnalysis "Required value sets"        RVS.reqValueAnalysis RVS.showAFType
+  ,cassAnalysis "Result values (top constructors)"
+                RVA.resultValueAnalysis RVA.showAType
   ,cassAnalysis "Residuating operations"     residuationAnalysis showResInfo
   ,cassAnalysis "Root cyclic replacements"   rootCyclicAnalysis showRootCyclic
   ,cassAnalysis "Root replacements"          rootReplAnalysis showRootRepl
