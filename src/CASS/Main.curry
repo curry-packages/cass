@@ -2,7 +2,7 @@
 --- This is the main module to start the executable of the analysis system.
 ---
 --- @author Michael Hanus
---- @version June 2023
+--- @version October 2023
 --------------------------------------------------------------------------
 
 module CASS.Main ( main ) where
@@ -40,9 +40,9 @@ main = do
   when (optDelete opts) (deleteFiles args)
   when ((optServer opts && not (null args)) ||
         (not (optServer opts) && length args /= 2))
-       (error "Illegal arguments (try `-h' for help)" >> exitWith 1)
+       (writeErrorAndExit "Illegal arguments (try `-h' for help)")
   when (optWorker opts && length args /= 2)
-       (error "Illegal arguments (try `-h' for help)" >> exitWith 1)
+       (writeErrorAndExit "Illegal arguments (try `-h' for help)")
   let cconfig1 = foldr (uncurry updateProperty) cconfig (optProp opts)
       verb     = optVerb opts
       cconfig2 = if verb >= 0
@@ -69,18 +69,24 @@ main = do
                   putStrLn $ "Deleting files for analysis `" ++ fullaname ++ "'"
                   deleteAllAnalysisFiles fullaname
                   exitWith 0
-    [] -> error "Missing analysis name!"
-    _  -> error "Too many arguments (only analysis name should be given)!"
+    [] -> writeErrorAndExit "Missing analysis name!"
+    _  -> writeErrorAndExit
+            "Too many arguments (only analysis name should be given)!"
+
+writeErrorAndExit :: String -> IO _
+writeErrorAndExit msg = putStrLn ("ERROR: " ++ msg) >> exitWith 1
 
 -- Checks whether a given analysis name is a unique abbreviation
 -- of a registered analysis name and return the registered name.
 -- Otherwise, raise an error.
 checkAnalysisName :: String -> IO String
 checkAnalysisName aname = case matchedNames of
-  []       -> error $ "Unknown analysis name `"++ aname ++ "' " ++ tryCmt
+  []       -> writeErrorAndExit $
+                "Unknown analysis name `"++ aname ++ "' " ++ tryCmt
   [raname] -> return raname
-  (_:_:_)  -> error $ "Analysis name `"++ aname ++ "' not unique " ++ tryCmt ++
-                      ":\nPossible names are: " ++ unwords matchedNames
+  (_:_:_)  -> writeErrorAndExit $
+                "Analysis name `"++ aname ++ "' not unique " ++ tryCmt ++
+                ":\nPossible names are: " ++ unwords matchedNames
  where
   laname        = map toLower aname
   exactMatches  = filter ((== laname) . map toLower)
