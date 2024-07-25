@@ -28,7 +28,9 @@
     "configModule": "CASS.PackageConfig",
     "executable": {
         "name": "cass",
-        "main": "CASS.Main"
+        "main": "CASS.Main",
+        "options": { "kics2" : ":set rts -T",
+                     "kmcc"  : ":set args +RTS -T -RTS" }
     },
     "documentation": {
         "src-dir": "docs",
