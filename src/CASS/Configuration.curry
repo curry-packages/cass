@@ -11,7 +11,7 @@
 
 module CASS.Configuration
  ( systemBanner, baseDir, docDir, executableName
- , CConfig, debugLevel, setDebugLevel
+ , CConfig, defaultCConfig, debugLevel, setDebugLevel
  , getServerAddress, readRCFile, updateProperty
  , fixpointMethod, withPrelude
  , storeServerPortNumber, removeServerPortNumber
@@ -32,6 +32,7 @@ import Analysis.Logging   ( DLevel(..) )
 import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
 import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 
+--- The banner of the CASS system.
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
@@ -61,12 +62,12 @@ executableName = packageExecutable
 getServerAddress :: IO String
 getServerAddress = return "127.0.0.1" -- run only on local machine
 
--- timeout for network message passing: -1 is wait time infinity
+--- timeout for network message passing: -1 is wait time infinity
 waitTime :: Int
 waitTime = -1
 
--- Default number of workers (if the number is not found in the
--- configuration file).
+--- Default number of workers (if the number is not found in the
+--- configuration file).
 defaultWorkers :: Int
 defaultWorkers = 0
 
@@ -75,6 +76,7 @@ defaultWorkers = 0
 --- It contains the properties from the rc file and the current debug level.
 data CConfig = CConfig [(String,String)] DLevel
 
+--- The default configuration has no properties and is quiet.
 defaultCConfig :: CConfig
 defaultCConfig = CConfig [] Quiet
 
@@ -86,12 +88,12 @@ debugLevel (CConfig _ dl) = dl
 setDebugLevel :: Int -> CConfig -> CConfig
 setDebugLevel dl (CConfig ps _) = CConfig ps (toEnum dl)
 
--- Returns the fixpoint computation method from Config file
+--- Returns the fixpoint computation method from Config file
 fixpointMethod :: CConfig -> String
 fixpointMethod (CConfig properties _) =
   maybe "simple" id  (lookup "fixpoint" properties)
 
--- Get the option to analyze also the prelude from Config file
+--- Gets the option to analyze also the prelude from Config file
 withPrelude :: CConfig -> Bool
 withPrelude (CConfig properties _) =
   maybe True (/="no") (lookup "prelude" properties)
@@ -108,7 +110,7 @@ getDefaultPath (CConfig properties _) = do
                                            else currypath ++ ':' : value
     Nothing    -> currypath
 
--- number of worker threads running at the same time
+--- number of worker threads running at the same time
 numberOfWorkers :: CConfig -> Int
 numberOfWorkers (CConfig properties _) = do
   case lookup "numberOfWorkers" properties of
@@ -183,7 +185,7 @@ updateDebugLevel cc@(CConfig properties _) =
                     _        -> cc
     Nothing    -> cc
 
--- Updates a property.
+--- Updates a property.
 updateProperty :: String -> String -> CConfig -> CConfig
 updateProperty pn pv (CConfig currprops dl) =
   let newprops = replaceKeyValue pn pv currprops
