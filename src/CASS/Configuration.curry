@@ -18,7 +18,7 @@ module CASS.Configuration
  , getDefaultPath, waitTime, numberOfWorkers
  ) where
 
-import Control.Monad               ( unless )
+import Control.Monad               ( unless, when )
 import Curry.Compiler.Distribution ( curryCompiler )
 import Data.List                   ( sort )
 import Numeric                     ( readInt )
@@ -36,7 +36,7 @@ import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 11/10/2024 for " ++
+                   packageVersion ++ " of 12/10/2024 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
@@ -91,7 +91,7 @@ setDebugLevel dl (CConfig ps _) = CConfig ps (toEnum dl)
 --- Returns the fixpoint computation method from Config file
 fixpointMethod :: CConfig -> String
 fixpointMethod (CConfig properties _) =
-  maybe "simple" id  (lookup "fixpoint" properties)
+  maybe "wlist" id  (lookup "fixpoint" properties)
 
 --- Gets the option to analyze also the prelude from Config file
 withPrelude :: CConfig -> Bool
@@ -132,7 +132,8 @@ installPropertyFile :: IO ()
 installPropertyFile = do
   fname <- propertyFileName
   pfexists <- doesFileExist fname
-  unless pfexists $ do
+  dpfexists <- doesFileExist defaultPropertyFileName
+  when (not pfexists && dpfexists) $ do
     copyFile defaultPropertyFileName fname
     putStrLn $ "New analysis configuration file '" ++ fname ++ "' installed."
 
@@ -154,7 +155,8 @@ readRCFile = do
        rcName <- propertyFileName
        putStrLn $ "Updating '" ++ rcName ++ "'..."
        renameFile rcName $ rcName <.> "bak"
-       copyFile defaultPropertyFileName rcName
+       dpfexists <- doesFileExist defaultPropertyFileName
+       when dpfexists $ copyFile defaultPropertyFileName rcName
        mapM_ (\ (n, v) -> maybe (return ())
                  (\uv -> if uv == v then return ()
                                     else updatePropertyFile rcName n uv)
