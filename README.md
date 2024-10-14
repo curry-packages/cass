@@ -87,7 +87,7 @@ computed by CASS inside another Curry program.
 
 If you want to try CASS on simple programs via a web interface,
 you can use a
-[Web Demo Installation](https://cpm.curry-lang.org/webinstall/cass/)
+[Web Demo Installation](https://cpm.curry-lang.org/webapps/cass/)
 of CASS.
 
 
