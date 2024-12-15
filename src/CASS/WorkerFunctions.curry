@@ -3,7 +3,7 @@
 --- In particular, it contains some simple fixpoint computations.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version July 2024
+--- @version December 2024
 --------------------------------------------------------------------------
 
 module CASS.WorkerFunctions where
@@ -15,7 +15,7 @@ import System.CPUTime    ( getCPUTime )
 import Analysis.Files
 import Analysis.Logging  ( debugMessage, debugString )
 import Analysis.Types    ( Analysis(..), isSimpleAnalysis, isCombinedAnalysis
-                         , analysisName, startValue)
+                         , analysisName, startValue, isFunctionAnalysis, isTypeAnalysis)
 import Analysis.ProgInfo ( ProgInfo, combineProgInfo, emptyProgInfo
                          , publicProgInfo, lookupProgInfo, lists2ProgInfo
                          , equalProgInfo, publicListFromProgInfo, showProgInfo )
@@ -28,6 +28,9 @@ import RW.Base
 
 import CASS.Configuration
 import CASS.FlatCurryDependency ( callsDirectly, dependsDirectlyOnTypes )
+
+import CPM.Query.Main    (askCurryInfoCmd) -- for curry-info integration
+import qualified CPM.Query.Options as CPMQuery ( CurryEntity(..) )
 
 -----------------------------------------------------------------------
 -- Datatype to store already read ProgInfos for modules.
@@ -65,11 +68,30 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
   debugMessage dl 1 $ "Starting analysis for " ++ anaModName ++ "..."
   starttime <- getCPUTime
   startvals <- getStartValues analysis prog
-  result <-
+
+  curryInfoResult <-
+    if useCurryInfo cconfig &&
+       (isFunctionAnalysis analysis || isTypeAnalysis analysis)
+      then do let entkind = if isTypeAnalysis analysis then CPMQuery.Type
+                                                       else CPMQuery.Operation
+              debugMessage dl 1 $ "\nUse CURRYINFO for " ++
+                moduleName ++ " / " ++ "cass-" ++ ananame
+              res <- askCurryInfoCmd moduleName entkind ("cass-" ++ ananame)
+              debugMessage dl 3 $ "Result from CURRYINFO:\n" ++ show res
+              return res
+      else return Nothing
+    
+  result <- maybe
+    (debugMessage dl 1 ("\nAnalyze by CASS: " ++ moduleName ++
+                        " / " ++ ananame) >>
      if isCombinedAnalysis analysis
        then execCombinedAnalysis cconfig analysis prog importInfos
                                  startvals moduleName fpmethod
        else runAnalysis cconfig analysis prog importInfos startvals fpmethod
+    )
+    (\i -> return (lists2ProgInfo (i, [])))
+    (curryInfoResult >>= mapM (\(qn, s) -> fmap ((,) qn) (safeRead s)))
+
   storeAnalysisResult dl ananame moduleName result
   stoptime <- getCPUTime
   debugMessage dl 1 $ "Analysis time for " ++ anaModName ++ ": " ++
@@ -78,6 +100,9 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
   writeIORef store ((moduleName,publicProgInfo result):loadinfos)
  where
   dl = debugLevel cconfig
+
+  safeRead s = case readsPrec 0 s of [(x, "")] -> Just x
+                                     _         -> Nothing
 
 -- Loads analysis results for a list of modules where already read results
 -- are stored in an IORef.

@@ -5,6 +5,9 @@ path=
 # The number of workers (if value=0, no further processes are started):
 numberOfWorkers=0
 
+# Use the tool `curry-info` to import existing analysis infos?
+curryinfo=no
+
 # The method to compute the fixpoint in dependency analyses. Possible values:
 # simple   : simple fixpoint iteration
 # wlist    : fixpoint iteration with working lists

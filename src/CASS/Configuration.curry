@@ -6,14 +6,14 @@
 --- the analysis server (which is implicitly started if necessary).
 ---
 --- @author Michael Hanus
---- @version October 2024
+--- @version December 2024
 --------------------------------------------------------------------------
 
 module CASS.Configuration
  ( systemBanner, baseDir, docDir, executableName
- , CConfig, defaultCConfig, debugLevel, setDebugLevel
+ , CConfig(..), defaultCConfig, debugLevel, setDebugLevel
  , getServerAddress, readRCFile, updateProperty
- , fixpointMethod, withPrelude
+ , useCurryInfo, fixpointMethod, withPrelude
  , storeServerPortNumber, removeServerPortNumber
  , getDefaultPath, waitTime, numberOfWorkers
  ) where
@@ -28,7 +28,7 @@ import System.FilePath             ( FilePath, (</>), (<.>) )
 import System.Process
 import System.Directory
 
-import Analysis.Logging   ( DLevel(..) )
+import Analysis.Logging   ( DLevel(..), debugMessage )
 import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
 import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 
@@ -36,7 +36,7 @@ import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 12/10/2024 for " ++
+                   packageVersion ++ " of 14/12/2024 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
@@ -74,7 +74,7 @@ defaultWorkers = 0
 --------------------------------------------------------------------------
 --- Configuration info used during execution of CASS.
 --- It contains the properties from the rc file and the current debug level.
-data CConfig = CConfig [(String,String)] DLevel
+data CConfig = CConfig { ccProps :: [(String,String)], ccDebugLevel :: DLevel }
 
 --- The default configuration has no properties and is quiet.
 defaultCConfig :: CConfig
@@ -82,28 +82,30 @@ defaultCConfig = CConfig [] Quiet
 
 --- Returns the debug level from the current configuration.
 debugLevel :: CConfig -> DLevel
-debugLevel (CConfig _ dl) = dl
+debugLevel = ccDebugLevel
 
 --- Returns the debug level from the current configuration.
 setDebugLevel :: Int -> CConfig -> CConfig
-setDebugLevel dl (CConfig ps _) = CConfig ps (toEnum dl)
+setDebugLevel dl cc = cc { ccDebugLevel = toEnum dl }
+
+--- Returns the curryinfo flag from the current configuration.
+useCurryInfo :: CConfig -> Bool
+useCurryInfo cc = maybe False (=="yes") (lookup "curryinfo" (ccProps cc))
 
 --- Returns the fixpoint computation method from Config file
 fixpointMethod :: CConfig -> String
-fixpointMethod (CConfig properties _) =
-  maybe "wlist" id  (lookup "fixpoint" properties)
+fixpointMethod cc = maybe "wlist" id  (lookup "fixpoint" (ccProps cc))
 
 --- Gets the option to analyze also the prelude from Config file
 withPrelude :: CConfig -> Bool
-withPrelude (CConfig properties _) =
-  maybe True (/="no") (lookup "prelude" properties)
+withPrelude cc = maybe True (/="no") (lookup "prelude" (ccProps cc))
 
 --- Gets the default load path from the property file (added at the end
 --- of CURRYPATH).
 getDefaultPath :: CConfig -> IO String
-getDefaultPath (CConfig properties _) = do
+getDefaultPath cc = do
   currypath <- getEnv "CURRYPATH"
-  return $ case lookup "path" properties of
+  return $ case lookup "path" (ccProps cc) of
     Just value -> if all isSpace value
                     then currypath
                     else if null currypath then value
@@ -112,8 +114,8 @@ getDefaultPath (CConfig properties _) = do
 
 --- number of worker threads running at the same time
 numberOfWorkers :: CConfig -> Int
-numberOfWorkers (CConfig properties _) = do
-  case lookup "numberOfWorkers" properties of
+numberOfWorkers cc = do
+  case lookup "numberOfWorkers" (ccProps cc) of
     Just value -> case readInt value of
                     [(int,_)] -> int
                     _         -> defaultWorkers
@@ -149,11 +151,11 @@ readRCFile = do
    then readPropertiesAndStoreLocally
    else do
      installPropertyFile
-     CConfig userprops dl <- readPropertiesAndStoreLocally
+     cc@(CConfig userprops dl) <- readPropertiesAndStoreLocally
      distprops <- readPropertyFile defaultPropertyFileName
      unless (rcKeys userprops == rcKeys distprops) $ do
        rcName <- propertyFileName
-       putStrLn $ "Updating '" ++ rcName ++ "'..."
+       debugMessage dl 1 $ "Updating '" ++ rcName ++ "'..."
        renameFile rcName $ rcName <.> "bak"
        dpfexists <- doesFileExist defaultPropertyFileName
        when dpfexists $ copyFile defaultPropertyFileName rcName
@@ -162,14 +164,14 @@ readRCFile = do
                                     else updatePropertyFile rcName n uv)
                  (lookup n userprops))
              distprops
-     return (CConfig userprops dl)
+     return cc
 
 rcKeys :: [(String, String)] -> [String]
 rcKeys = sort . map fst
 
 --- Reads the user property file or, if it does not exist,
 --- the default property file of CASS,
---- and store the properties in a global variable for next access.
+--- and return the configuration with the properties.
 readPropertiesAndStoreLocally :: IO CConfig
 readPropertiesAndStoreLocally = do
   userpfn    <- propertyFileName
@@ -180,8 +182,8 @@ readPropertiesAndStoreLocally = do
 
 --- Updates the debug level from the current properties.
 updateDebugLevel :: CConfig -> CConfig
-updateDebugLevel cc@(CConfig properties _) =
-  case lookup "debugLevel" properties of
+updateDebugLevel cc =
+  case lookup "debugLevel" (ccProps cc) of
     Just value -> case readInt value of
                     [(dl,_)] -> setDebugLevel dl cc
                     _        -> cc
@@ -189,9 +191,7 @@ updateDebugLevel cc@(CConfig properties _) =
 
 --- Updates a property.
 updateProperty :: String -> String -> CConfig -> CConfig
-updateProperty pn pv (CConfig currprops dl) =
-  let newprops = replaceKeyValue pn pv currprops
-  in updateDebugLevel (CConfig newprops dl)
+updateProperty pn pv cc = cc { ccProps = replaceKeyValue pn pv (ccProps cc) }
 
 replaceKeyValue :: Eq a => a -> b -> [(a,b)] -> [(a,b)]
 replaceKeyValue k v []            = [(k,v)]

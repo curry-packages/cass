@@ -2,7 +2,7 @@
 --- Defining and processing tool options of CASS.
 ---
 --- @author Michael Hanus
---- @version October 2024
+--- @version December 2024
 --------------------------------------------------------------------------
 
 module CASS.Options where
@@ -68,6 +68,10 @@ options =
   , Option "r" ["reanalyze"]
            (NoArg (\opts -> opts { optReAna = True }))
            "force re-analysis \n(i.e., ignore old analysis information)"
+  , Option "i" ["curryinfo"]
+           (NoArg (\opts -> opts { optProp =
+                                     optProp opts ++ [("curryinfo","yes")] }))
+           "use `curry-info` to import analysis infos"
   , Option "d" ["delete"]
            (NoArg (\opts -> opts { optDelete = True }))
            "delete existing analysis results"
@@ -103,6 +107,5 @@ options =
      in if null eqvalue
          then error "Illegal property setting (try `-h' for help)"
          else opts { optProp = optProp opts ++ [(key,tail eqvalue)] }
-
 
 --------------------------------------------------------------------------
