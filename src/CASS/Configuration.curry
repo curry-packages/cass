@@ -6,7 +6,7 @@
 --- the analysis server (which is implicitly started if necessary).
 ---
 --- @author Michael Hanus
---- @version December 2024
+--- @version January 2025
 --------------------------------------------------------------------------
 
 module CASS.Configuration
@@ -24,6 +24,7 @@ import Data.List                   ( sort )
 import Numeric                     ( readInt )
 import System.Environment          ( getEnv )
 import System.FilePath             ( FilePath, (</>), (<.>) )
+import System.IO                   ( hPutStrLn, stderr )
 
 import System.Process
 import System.Directory
@@ -36,7 +37,7 @@ import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 14/12/2024 for " ++
+                   packageVersion ++ " of 04/01/2025 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
@@ -137,7 +138,8 @@ installPropertyFile = do
   dpfexists <- doesFileExist defaultPropertyFileName
   when (not pfexists && dpfexists) $ do
     copyFile defaultPropertyFileName fname
-    putStrLn $ "New analysis configuration file '" ++ fname ++ "' installed."
+    hPutStrLn stderr $
+      "New analysis configuration file '" ++ fname ++ "' installed."
 
 --- Reads the rc file (and try to install a user copy of it if it does not
 --- exist) and returns its definition. Additionally, the definitions
