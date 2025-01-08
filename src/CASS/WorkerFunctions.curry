@@ -3,7 +3,7 @@
 --- In particular, it contains some simple fixpoint computations.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version December 2024
+--- @version January 2025
 --------------------------------------------------------------------------
 
 module CASS.WorkerFunctions where
@@ -29,7 +29,7 @@ import RW.Base
 import CASS.Configuration
 import CASS.FlatCurryDependency ( callsDirectly, dependsDirectlyOnTypes )
 
-import CPM.Query.Main    (askCurryInfoCmd) -- for curry-info integration
+import CPM.Query.Main    ( askCurryInfoCmd ) -- for curry-info integration
 import qualified CPM.Query.Options as CPMQuery ( CurryEntity(..) )
 
 -----------------------------------------------------------------------
@@ -72,7 +72,7 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
   curryInfoResult <-
     if useCurryInfo cconfig && ananame `elem` curryInfoAnalyses &&
        (isFunctionAnalysis analysis || isTypeAnalysis analysis)
-      then do
+      then do -- try `curry-info` to get analysis results:
         let entkind = if isTypeAnalysis analysis then CPMQuery.Type
                                                  else CPMQuery.Operation
             withcgi = useCurryInfoCGI cconfig
@@ -81,13 +81,13 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
           moduleName ++ " / " ++ "cass-" ++ ananame
         res <- askCurryInfoCmd withcgi moduleName entkind
                                ("cass-" ++ ananame)
-        debugMessage dl 3 $ "Result from CURRYINFO:\n" ++ show res
+        debugMessage dl 3 $ "Result received from CURRYINFO:\n" ++ show res
         return res
       else return Nothing
   
   result <- maybe
-    (debugMessage dl 1 ("\nAnalyze by CASS: " ++ moduleName ++
-                        " / " ++ ananame) >>
+    (debugMessage dl 1
+       ("\nAnalyze by CASS: " ++ moduleName ++ " / " ++ ananame) >>
      if isCombinedAnalysis analysis
        then execCombinedAnalysis cconfig analysis prog importInfos
                                  startvals moduleName fpmethod

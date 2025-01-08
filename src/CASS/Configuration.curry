@@ -76,12 +76,12 @@ defaultWorkers = 0
 --- Analysis names currently supported by CurryInfo.
 curryInfoAnalyses :: [String]
 curryInfoAnalyses =
-  [ "deterministic"
-  , "demand"
-  , "indeterministic"
-  , "solcomplete"
-  , "terminating"
-  , "total"
+  [ "Deterministic"
+  , "Demand"
+  , "Indeterministic"
+  , "SolComplete"
+  , "Terminating"
+  , "Total"
   ]
 
 --------------------------------------------------------------------------
