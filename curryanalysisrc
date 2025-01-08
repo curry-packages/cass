@@ -6,6 +6,9 @@ path=
 numberOfWorkers=0
 
 # Use the tool `curry-info` to import existing analysis infos?
+# no  : do not use it
+# yes : use the local installation of `curry-info`
+# cgi : use the CGI web server of `curry-info`
 curryinfo=no
 
 # The method to compute the fixpoint in dependency analyses. Possible values:

@@ -13,7 +13,7 @@ module CASS.Configuration
  ( systemBanner, baseDir, docDir, executableName
  , CConfig(..), defaultCConfig, debugLevel, setDebugLevel
  , getServerAddress, readRCFile, updateProperty
- , useCurryInfo, fixpointMethod, withPrelude
+ , useCurryInfo, useCurryInfoCGI, fixpointMethod, withPrelude
  , storeServerPortNumber, removeServerPortNumber
  , getDefaultPath, waitTime, numberOfWorkers
  ) where
@@ -91,7 +91,12 @@ setDebugLevel dl cc = cc { ccDebugLevel = toEnum dl }
 
 --- Returns the curryinfo flag from the current configuration.
 useCurryInfo :: CConfig -> Bool
-useCurryInfo cc = maybe False (=="yes") (lookup "curryinfo" (ccProps cc))
+useCurryInfo cc =
+  maybe False (`elem` ["yes","cgi"]) (lookup "curryinfo" (ccProps cc))
+
+--- Returns the curryinfo CGI flag from the current configuration.
+useCurryInfoCGI :: CConfig -> Bool
+useCurryInfoCGI cc = maybe False (=="cgi") (lookup "curryinfo" (ccProps cc))
 
 --- Returns the fixpoint computation method from Config file
 fixpointMethod :: CConfig -> String

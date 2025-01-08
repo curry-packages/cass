@@ -68,11 +68,15 @@ options =
   , Option "r" ["reanalyze"]
            (NoArg (\opts -> opts { optReAna = True }))
            "force re-analysis \n(i.e., ignore old analysis information)"
-  , Option "i" ["curryinfo"]
+  , Option "" ["curryinfo"]
            (NoArg (\opts -> opts { optProp =
                                      optProp opts ++ [("curryinfo","yes")] }))
            "use `curry-info` to import analysis infos"
-  , Option "d" ["delete"]
+  , Option "" ["curryinfocgi"]
+           (NoArg (\opts -> opts { optProp =
+                                     optProp opts ++ [("curryinfo","cgi")] }))
+           "use `curry-info` CGI server to import analysis infos"
+ , Option "d" ["delete"]
            (NoArg (\opts -> opts { optDelete = True }))
            "delete existing analysis results"
   , Option "s" ["server"]

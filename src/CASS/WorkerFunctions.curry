@@ -72,15 +72,19 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
   curryInfoResult <-
     if useCurryInfo cconfig &&
        (isFunctionAnalysis analysis || isTypeAnalysis analysis)
-      then do let entkind = if isTypeAnalysis analysis then CPMQuery.Type
-                                                       else CPMQuery.Operation
-              debugMessage dl 1 $ "\nUse CURRYINFO for " ++
-                moduleName ++ " / " ++ "cass-" ++ ananame
-              res <- askCurryInfoCmd moduleName entkind ("cass-" ++ ananame)
-              debugMessage dl 3 $ "Result from CURRYINFO:\n" ++ show res
-              return res
+      then do
+        let entkind = if isTypeAnalysis analysis then CPMQuery.Type
+                                                 else CPMQuery.Operation
+            withcgi = useCurryInfoCGI cconfig
+        debugMessage dl 1 $ "\nUse CURRYINFO" ++
+          (if withcgi then "/CGI" else "") ++ " for " ++
+          moduleName ++ " / " ++ "cass-" ++ ananame
+        res <- askCurryInfoCmd withcgi moduleName entkind
+                               ("cass-" ++ ananame)
+        debugMessage dl 3 $ "Result from CURRYINFO:\n" ++ show res
+        return res
       else return Nothing
-    
+  
   result <- maybe
     (debugMessage dl 1 ("\nAnalyze by CASS: " ++ moduleName ++
                         " / " ++ ananame) >>
