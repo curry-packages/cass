@@ -1,3 +1,5 @@
+# Configuration file for program 'cass' (Curry Analysis Server System)
+
 # The initial default path when the system is started:
 # (this path is added at the end of an existing CURRYPATH value)
 path=

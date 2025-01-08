@@ -70,7 +70,7 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
   startvals <- getStartValues analysis prog
 
   curryInfoResult <-
-    if useCurryInfo cconfig &&
+    if useCurryInfo cconfig && ananame `elem` curryInfoAnalyses &&
        (isFunctionAnalysis analysis || isTypeAnalysis analysis)
       then do
         let entkind = if isTypeAnalysis analysis then CPMQuery.Type

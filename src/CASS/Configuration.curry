@@ -11,6 +11,7 @@
 
 module CASS.Configuration
  ( systemBanner, baseDir, docDir, executableName
+ , curryInfoAnalyses
  , CConfig(..), defaultCConfig, debugLevel, setDebugLevel
  , getServerAddress, readRCFile, updateProperty
  , useCurryInfo, useCurryInfoCGI, fixpointMethod, withPrelude
@@ -37,7 +38,7 @@ import Data.PropertyFile  ( readPropertyFile, updatePropertyFile )
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 04/01/2025 for " ++
+                   packageVersion ++ " of 08/01/2025 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
@@ -71,6 +72,17 @@ waitTime = -1
 --- configuration file).
 defaultWorkers :: Int
 defaultWorkers = 0
+
+--- Analysis names currently supported by CurryInfo.
+curryInfoAnalyses :: [String]
+curryInfoAnalyses =
+  [ "deterministic"
+  , "demand"
+  , "indeterministic"
+  , "solcomplete"
+  , "terminating"
+  , "total"
+  ]
 
 --------------------------------------------------------------------------
 --- Configuration info used during execution of CASS.
