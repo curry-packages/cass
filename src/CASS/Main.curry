@@ -2,7 +2,7 @@
 --- This is the main module to start the executable of the analysis system.
 ---
 --- @author Michael Hanus
---- @version December 2024
+--- @version January 2025
 --------------------------------------------------------------------------
 
 module CASS.Main ( main ) where
@@ -22,6 +22,7 @@ import Analysis.Logging   ( debugMessage )
 import CASS.Configuration
 import CASS.Doc           ( getAnalysisDoc )
 import CASS.Options
+import CASS.RCFile        ( readRCFile, updateProperty )
 import CASS.Server        ( analyzeModuleAndPrint, mainServer )
 import CASS.Registry      ( registeredAnalysisInfos, registeredAnalysisNames )
 import CASS.Worker        ( startWorker )

@@ -5,7 +5,7 @@
 --- by other Curry applications.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version October 2024
+--- @version January 2025
 --------------------------------------------------------------------------
 
 module CASS.Server
@@ -34,6 +34,7 @@ import Network.Socket     ( Socket(..), listenOn, listenOnFresh
                           , close, waitForSocketAccept )
 
 import CASS.Configuration
+import CASS.RCFile          ( readRCFile )
 import CASS.Registry
 import CASS.ServerFormats
 import CASS.ServerFunctions ( WorkerMessage(..) )
