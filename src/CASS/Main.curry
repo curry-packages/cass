@@ -12,6 +12,7 @@ import Data.List             ( isPrefixOf, isSuffixOf, sort, init )
 import Control.Monad         ( when, unless )
 import System.CurryPath      ( stripCurrySuffix )
 import System.FilePath       ( (</>), (<.>) )
+import System.IO             ( hPutStrLn, stderr )
 import System.Path           ( fileInPath )
 import System.Process        ( exitWith )
 import System.Environment    ( getArgs )
@@ -87,7 +88,7 @@ main = do
             "Too many arguments (only analysis name should be given)!"
 
 writeErrorAndExit :: String -> IO _
-writeErrorAndExit msg = putStrLn ("ERROR: " ++ msg) >> exitWith 1
+writeErrorAndExit msg = hPutStrLn stderr ("ERROR: " ++ msg) >> exitWith 1
 
 -- Checks whether a given analysis name is a unique abbreviation
 -- of a registered analysis name and return the registered name.
