@@ -81,6 +81,7 @@ curryInfoAnalyses =
   , "SolComplete"
   , "Terminating"
   , "Total"
+  , "Values"
   ]
 
 --------------------------------------------------------------------------
