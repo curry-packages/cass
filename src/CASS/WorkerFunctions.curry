@@ -75,11 +75,11 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
       then do -- try `curry-info` to get analysis results:
         let entkind = if isTypeAnalysis analysis then CPMQuery.Type
                                                  else CPMQuery.Operation
-            withcgi = useCurryInfoCGI cconfig
+            withciweb = useCurryInfoWeb cconfig
         debugMessage dl 1 $ "\nUse CURRYINFO" ++
-          (if withcgi then "/CGI" else "") ++ " for " ++
+          (if withciweb then "/WEB" else "") ++ " for " ++
           moduleName ++ " / " ++ "cass-" ++ ananame
-        res <- askCurryInfoCmd withcgi moduleName entkind
+        res <- askCurryInfoCmd withciweb moduleName entkind
                                ("cass-" ++ ananame)
         debugMessage dl 3 $ "Result received from CURRYINFO:\n" ++ show res
         return res

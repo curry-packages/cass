@@ -40,7 +40,7 @@ defaultRCProps =
   , Left "# Use the tool `curry-info` to import existing analysis infos?"
   , Left "# no  : do not use it"
   , Left "# yes : use the local installation of `curry-info`"
-  , Left "# cgi : use the CGI web server of `curry-info`"
+  , Left "# web : use the web server of `curry-info`"
   , Right ("curryinfo", "no")
   , Left ""
   , Left "# The method to compute the fixpoint in dependency analyses. Values:"

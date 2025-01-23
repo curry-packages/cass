@@ -69,7 +69,7 @@ main = do
  where
   -- Set curryinfo property to `no` if executable `curry-info` does not exist
   checkCurryInfoProp cc = do
-    if useCurryInfo cc && not (useCurryInfoCGI cc)
+    if useCurryInfo cc && not (useCurryInfoWeb cc)
       then do excurryinfo <- fileInPath "curry-info"
               if excurryinfo
                 then return cc

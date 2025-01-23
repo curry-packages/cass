@@ -14,7 +14,7 @@ module CASS.Configuration
  , curryInfoAnalyses
  , CConfig(..), defaultCConfig, debugLevel, setDebugLevel
  , getServerAddress
- , useCurryInfo, useCurryInfoCGI, fixpointMethod, withPrelude
+ , useCurryInfo, useCurryInfoWeb, fixpointMethod, withPrelude
  , storeServerPortNumber, removeServerPortNumber
  , getDefaultPath, waitTime, numberOfWorkers
  ) where
@@ -37,7 +37,7 @@ import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 12/01/2025 for " ++
+                   packageVersion ++ " of 23/01/2025 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
@@ -104,11 +104,11 @@ setDebugLevel dl cc = cc { ccDebugLevel = toEnum dl }
 --- Returns the curryinfo flag from the current configuration.
 useCurryInfo :: CConfig -> Bool
 useCurryInfo cc =
-  maybe False (`elem` ["yes","cgi"]) (lookup "curryinfo" (ccProps cc))
+  maybe False (`elem` ["yes","web"]) (lookup "curryinfo" (ccProps cc))
 
---- Returns the curryinfo CGI flag from the current configuration.
-useCurryInfoCGI :: CConfig -> Bool
-useCurryInfoCGI cc = maybe False (=="cgi") (lookup "curryinfo" (ccProps cc))
+--- Returns the curryinfo web flag from the current configuration.
+useCurryInfoWeb :: CConfig -> Bool
+useCurryInfoWeb cc = maybe False (=="web") (lookup "curryinfo" (ccProps cc))
 
 --- Returns the fixpoint computation method from Config file
 fixpointMethod :: CConfig -> String

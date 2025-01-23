@@ -72,11 +72,11 @@ options =
            (NoArg (\opts -> opts { optProp =
                                      optProp opts ++ [("curryinfo","yes")] }))
            "use `curry-info` to import analysis infos"
-  , Option "" ["curryinfocgi"]
+  , Option "" ["curryinfoweb"]
            (NoArg (\opts -> opts { optProp =
-                                     optProp opts ++ [("curryinfo","cgi")] }))
-           "use `curry-info` CGI server to import analysis infos"
- , Option "d" ["delete"]
+                                     optProp opts ++ [("curryinfo","web")] }))
+           "use `curry-info` web server to get analysis infos"
+  , Option "d" ["delete"]
            (NoArg (\opts -> opts { optDelete = True }))
            "delete existing analysis results"
   , Option "s" ["server"]
