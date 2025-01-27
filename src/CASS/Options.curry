@@ -70,11 +70,11 @@ options =
            "force re-analysis \n(i.e., ignore old analysis information)"
   , Option "" ["curryinfo"]
            (NoArg (\opts -> opts { optProp =
-                                     optProp opts ++ [("curryinfo","yes")] }))
+                                    optProp opts ++ [("curryinfo","local")] }))
            "use `curry-info` to import analysis infos"
   , Option "" ["curryinfoweb"]
            (NoArg (\opts -> opts { optProp =
-                                     optProp opts ++ [("curryinfo","web")] }))
+                                    optProp opts ++ [("curryinfo","remote")] }))
            "use `curry-info` web server to get analysis infos"
   , Option "d" ["delete"]
            (NoArg (\opts -> opts { optDelete = True }))

@@ -22,7 +22,8 @@ import System.FilePath   ( FilePath, (</>), (<.>) )
 import System.Directory  ( doesDirectoryExist, doesFileExist, getHomeDirectory
                          , renameFile )
 
-import CASS.Configuration (CConfig(..), ccProps, setDebugLevel)
+import CASS.Configuration ( CConfig(..), debugLevel, defaultCConfig
+                          , setDebugLevel )
 
 ------------------------------------------------------------------------------
 --- Initial properties of the default RC template file.
@@ -38,9 +39,9 @@ defaultRCProps =
   , Right ("numberOfWorkers", "0")
   , Left ""
   , Left "# Use the tool `curry-info` to import existing analysis infos?"
-  , Left "# no  : do not use it"
-  , Left "# yes : use the local installation of `curry-info`"
-  , Left "# web : use the web server of `curry-info`"
+  , Left "# no     : do not use it"
+  , Left "# local  : use the local installation of `curry-info`"
+  , Left "# remote : use the web service of `curry-info`"
   , Right ("curryinfo", "no")
   , Left ""
   , Left "# The method to compute the fixpoint in dependency analyses. Values:"
@@ -101,11 +102,12 @@ readRCFile = do
    then readPropertiesAndStoreLocally
    else do
      installPropertyFile
-     cc@(CConfig userprops dl) <- readPropertiesAndStoreLocally
+     cc <- readPropertiesAndStoreLocally
      let distprops = rights defaultRCProps
+         userprops = ccProps cc
      unless (rcKeys userprops == rcKeys distprops) $ do
        rcName <- propertyFileName
-       debugMessage dl 1 $ "Updating '" ++ rcName ++ "'..."
+       debugMessage (debugLevel cc) 1 $ "Updating '" ++ rcName ++ "'..."
        renameFile rcName $ rcName <.> "bak"
        writeFile rcName defaultRC
        mapM_ (\ (n, v) -> maybe (return ())
@@ -127,7 +129,7 @@ readPropertiesAndStoreLocally = do
   props      <- if hasuserpfn
                   then readPropertyFile userpfn
                   else return $ rights defaultRCProps
-  return $ updateDebugLevel (CConfig props Quiet)
+  return $ updateDebugLevel (defaultCConfig { ccProps = props })
 
 --- Updates the debug level from the current properties.
 updateDebugLevel :: CConfig -> CConfig

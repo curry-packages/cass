@@ -39,6 +39,7 @@ main = do
   unless (null opterrors)
          (putStr (unlines opterrors) >> putStr usageText >> exitWith 1)
   cconfig <- readRCFile
+  let cconfig0 = cconfig { ccOptions = opts }
   when (optHelp opts) (printHelp args >> exitWith 1)
   when (optDelete opts) (deleteFilesAndExit args)
   when ((optServer opts && not (null args)) ||
@@ -46,7 +47,7 @@ main = do
        (writeErrorAndExit "Illegal arguments (try `-h' for help)")
   when (optWorker opts && length args /= 2)
        (writeErrorAndExit "Illegal arguments (try `-h' for help)")
-  let cconfig1 = foldr (uncurry updateProperty) cconfig (optProp opts)
+  let cconfig1 = foldr (uncurry updateProperty) cconfig0 (optProp opts)
       verb     = optVerb opts
       cconfig2 = if verb >= 0 then setDebugLevel verb cconfig1
                               else cconfig1

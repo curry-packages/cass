@@ -28,6 +28,7 @@ import RW.Base
 
 import CASS.Configuration
 import CASS.FlatCurryDependency ( callsDirectly, dependsDirectlyOnTypes )
+import CASS.Options      ( Options(..) )
 
 import CPM.Query.Main    ( askCurryInfoCmd ) -- for curry-info integration
 import qualified CPM.Query.Options as CPMQuery ( CurryEntity(..) )
@@ -70,7 +71,8 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
   startvals <- getStartValues analysis prog
 
   curryInfoResult <-
-    if useCurryInfo cconfig && ananame `elem` curryInfoAnalyses &&
+    if useCurryInfo cconfig && not (optAll (ccOptions cconfig)) &&
+       ananame `elem` curryInfoAnalyses &&
        (isFunctionAnalysis analysis || isTypeAnalysis analysis)
       then do -- try `curry-info` to get analysis results:
         let entkind = if isTypeAnalysis analysis then CPMQuery.Type
@@ -85,16 +87,16 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
         return res
       else return Nothing
   
-  result <- maybe
-    (debugMessage dl 1
-       ("\nAnalyze by CASS: " ++ moduleName ++ " / " ++ ananame) >>
-     if isCombinedAnalysis analysis
-       then execCombinedAnalysis cconfig analysis prog importInfos
-                                 startvals moduleName fpmethod
-       else runAnalysis cconfig analysis prog importInfos startvals fpmethod
-    )
-    (\i -> return (lists2ProgInfo (i, [])))
-    (curryInfoResult >>= mapM (\(qn, s) -> fmap ((,) qn) (safeRead s)))
+  result <-
+    case curryInfoResult >>= mapM (\(qn, s) -> fmap ((,) qn) (safeRead s)) of
+      Nothing ->  do
+        debugMessage dl 1 $
+          "\nAnalyze by CASS: " ++ moduleName ++ " / " ++ ananame
+        if isCombinedAnalysis analysis
+          then execCombinedAnalysis cconfig analysis prog importInfos
+                                    startvals moduleName fpmethod
+          else runAnalysis cconfig analysis prog importInfos startvals fpmethod
+      Just i -> return (lists2ProgInfo (i, []))
 
   storeAnalysisResult dl ananame moduleName result
   stoptime <- getCPUTime

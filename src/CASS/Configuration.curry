@@ -31,13 +31,14 @@ import System.Directory   ( getHomeDirectory, removeFile )
 import System.Process     ( getPID )
 
 import Analysis.Logging   ( DLevel(..), debugMessage )
+import CASS.Options       ( Options(..), defaultOptions )
 import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
 
 --- The banner of the CASS system.
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 23/01/2025 for " ++
+                   packageVersion ++ " of 27/01/2025 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
@@ -86,12 +87,17 @@ curryInfoAnalyses =
 
 --------------------------------------------------------------------------
 --- Configuration info used during execution of CASS.
---- It contains the properties from the rc file and the current debug level.
-data CConfig = CConfig { ccProps :: [(String,String)], ccDebugLevel :: DLevel }
+--- It contains the properties from the RC file, the current debug level,
+--- and the options passed to CASS.
+data CConfig = CConfig
+  { ccProps      :: [(String,String)]
+  , ccDebugLevel :: DLevel
+  , ccOptions    :: Options
+  }
 
 --- The default configuration has no properties and is quiet.
 defaultCConfig :: CConfig
-defaultCConfig = CConfig [] Quiet
+defaultCConfig = CConfig [] Quiet defaultOptions
 
 --- Returns the debug level from the current configuration.
 debugLevel :: CConfig -> DLevel
@@ -104,11 +110,11 @@ setDebugLevel dl cc = cc { ccDebugLevel = toEnum dl }
 --- Returns the curryinfo flag from the current configuration.
 useCurryInfo :: CConfig -> Bool
 useCurryInfo cc =
-  maybe False (`elem` ["yes","web"]) (lookup "curryinfo" (ccProps cc))
+  maybe False (`elem` ["local","remote"]) (lookup "curryinfo" (ccProps cc))
 
 --- Returns the curryinfo web flag from the current configuration.
 useCurryInfoWeb :: CConfig -> Bool
-useCurryInfoWeb cc = maybe False (=="web") (lookup "curryinfo" (ccProps cc))
+useCurryInfoWeb cc = maybe False (=="remote") (lookup "curryinfo" (ccProps cc))
 
 --- Returns the fixpoint computation method from Config file
 fixpointMethod :: CConfig -> String
