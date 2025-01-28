@@ -81,8 +81,8 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
         debugMessage dl 1 $ "\nUse CURRYINFO" ++
           (if withciweb then "/WEB" else "") ++ " for " ++
           moduleName ++ " / " ++ "cass-" ++ ananame
-        res <- askCurryInfoCmd withciweb moduleName entkind
-                               ("cass-" ++ ananame)
+        res <- askCurryInfoCmd withciweb (optVerb (ccOptions cconfig))
+                 moduleName entkind ("cass-" ++ ananame)
         debugMessage dl 3 $ "Result received from CURRYINFO:\n" ++ show res
         return res
       else return Nothing
