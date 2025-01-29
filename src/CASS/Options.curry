@@ -16,34 +16,36 @@ import CASS.ServerFormats
 --------------------------------------------------------------------------
 -- Representation of command line options.
 data Options = Options
-  { optHelp      :: Bool         -- print help?
-  , optVerb      :: Int          -- verbosity level
-  , optServer    :: Bool         -- start CASS in server mode?
-  , optWorker    :: Bool         -- start CASS in worker mode?
-  , optPort      :: Int          -- port number (if used in server mode)
-  , optAll       :: Bool         -- show analysis results for all operations?
-  , optGenerated :: Bool         -- show results for generated operations?
-  , optFormat    :: OutputFormat -- output format
-  , optReAna     :: Bool         -- force re-analysis?
-  , optDelete    :: Bool         -- delete analysis files?
-  , optProp      :: [(String,String)] -- property (of ~/.curryanalsisrc)
-                                      -- to be set during this analysis run
+  { optHelp        :: Bool         -- print help?
+  , optVerb        :: Int          -- verbosity level
+  , optServer      :: Bool         -- start CASS in server mode?
+  , optWorker      :: Bool         -- start CASS in worker mode?
+  , optPort        :: Int          -- port number (if used in server mode)
+  , optAll         :: Bool         -- show analysis results for all operations?
+  , optGenerated   :: Bool         -- show results for generated operations?
+  , optFormat      :: OutputFormat -- output format
+  , optReAna       :: Bool         -- force re-analysis?
+  , optDelete      :: Bool         -- delete analysis files?
+  , optNoCurryInfo :: [String]     -- modules where CurryInfo should not be asked
+  , optProp        :: [(String,String)] -- property (of ~/.curryanalsisrc)
+                                        -- to be set during this analysis run
   }
 
 -- Default command line options.
 defaultOptions :: Options
 defaultOptions = Options
-  { optHelp      = False
-  , optVerb      = -1
-  , optServer    = False
-  , optWorker    = False
-  , optPort      = 0
-  , optAll       = False
-  , optGenerated = True
-  , optFormat    = FormatText
-  , optReAna     = False
-  , optDelete    = False
-  , optProp      = []
+  { optHelp        = False
+  , optVerb        = -1
+  , optServer      = False
+  , optWorker      = False
+  , optPort        = 0
+  , optAll         = False
+  , optGenerated   = True
+  , optFormat      = FormatText
+  , optReAna       = False
+  , optDelete      = False
+  , optNoCurryInfo = []
+  , optProp        = []
   }
 
 -- Definition of actual command line options.
@@ -75,7 +77,11 @@ options =
   , Option "" ["curryinfoweb"]
            (NoArg (\opts -> opts { optProp =
                                     optProp opts ++ [("curryinfo","remote")] }))
-           "use `curry-info` web server to get analysis infos"
+           "use `curry-info` web server for analysis infos"
+  , Option "" ["nocurryinfo"]
+           (ReqArg (\m opts ->
+                      opts { optNoCurryInfo = m : optNoCurryInfo opts}) "<m>")
+           "do not use `curry-info` for module <m>"
   , Option "d" ["delete"]
            (NoArg (\opts -> opts { optDelete = True }))
            "delete existing analysis results"

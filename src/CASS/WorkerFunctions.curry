@@ -28,7 +28,7 @@ import RW.Base
 
 import CASS.Configuration
 import CASS.FlatCurryDependency ( callsDirectly, dependsDirectlyOnTypes )
-import CASS.Options      ( Options(..) )
+import CASS.Options      ( Options(..), optNoCurryInfo )
 
 import CPM.Query.Main    ( askCurryInfoCmd ) -- for curry-info integration
 import qualified CPM.Query.Options as CPMQuery ( CurryEntity(..) )
@@ -72,6 +72,7 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
 
   curryInfoResult <-
     if useCurryInfo cconfig && not (optAll (ccOptions cconfig)) &&
+       moduleName `notElem` optNoCurryInfo (ccOptions cconfig) &&
        ananame `elem` curryInfoAnalyses &&
        (isFunctionAnalysis analysis || isTypeAnalysis analysis)
       then do -- try `curry-info` to get analysis results:
@@ -90,6 +91,7 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
   result <-
     case curryInfoResult >>= mapM (\(qn, s) -> fmap ((,) qn) (safeRead s)) of
       Nothing ->  do
+        debugMessage dl 3 $ "Read error of CURRYINFO result!"
         debugMessage dl 1 $
           "\nAnalyze by CASS: " ++ moduleName ++ " / " ++ ananame
         if isCombinedAnalysis analysis
