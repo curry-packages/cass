@@ -38,7 +38,7 @@ import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 18/02/2025 for " ++
+                   packageVersion ++ " of 20/02/2025 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
