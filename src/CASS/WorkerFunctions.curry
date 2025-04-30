@@ -3,7 +3,7 @@
 --- In particular, it contains some simple fixpoint computations.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version February 2025
+--- @version April 2025
 --------------------------------------------------------------------------
 
 module CASS.WorkerFunctions where
@@ -19,7 +19,8 @@ import Analysis.Types    ( Analysis(..), isSimpleAnalysis, isCombinedAnalysis
                          , isTypeAnalysis)
 import Analysis.ProgInfo ( ProgInfo, combineProgInfo, emptyProgInfo
                          , publicProgInfo, lookupProgInfo, lists2ProgInfo
-                         , equalProgInfo, publicListFromProgInfo, showProgInfo )
+                         , publicMap2ProgInfo, equalProgInfo
+                         , publicListFromProgInfo, showProgInfo )
 import Data.Map as Map
 import FlatCurry.Types
 import FlatCurry.Goodies
@@ -85,13 +86,13 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
           (if withciweb then "/WEB" else "") ++ " for " ++
           moduleName ++ " / " ++ cirequest
         res <- askCurryInfoCmd withciweb (optVerb (ccOptions cconfig))
-                               moduleName entkind cirequest
+                               moduleName entkind cirequest "CurryTerm"
         debugMessage dl 3 $ "Result received from CURRYINFO:\n" ++ show res
         return res
       else return Nothing
 
   result <-
-    case curryInfoResult >>= mapM (\(qn, s) -> fmap ((,) qn) (safeRead s)) of
+    case curryInfoResult >>= safeRead of
       Nothing ->  do
         debugMessage dl 3 $ "Read error of CURRYINFO result!"
         debugMessage dl 1 $
@@ -100,7 +101,7 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
           then execCombinedAnalysis cconfig analysis prog importInfos
                                     startvals moduleName fpmethod
           else runAnalysis cconfig analysis prog importInfos startvals fpmethod
-      Just i -> return (lists2ProgInfo (i, []))
+      Just pmap -> return (publicMap2ProgInfo pmap)
 
   storeAnalysisResult dl ananame moduleName result
   stoptime <- getCPUTime
