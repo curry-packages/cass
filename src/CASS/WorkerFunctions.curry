@@ -97,11 +97,12 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
         debugMessage dl 3 $ "Read error of CURRYINFO result!"
         debugMessage dl 1 $
           "\nAnalyze by CASS: " ++ moduleName ++ " / " ++ ananame
+        incAnaMods cconfig
         if isCombinedAnalysis analysis
           then execCombinedAnalysis cconfig analysis prog importInfos
                                     startvals moduleName fpmethod
           else runAnalysis cconfig analysis prog importInfos startvals fpmethod
-      Just pmap -> return (publicMap2ProgInfo pmap)
+      Just pmap -> incCurryInfoMods cconfig >> return (publicMap2ProgInfo pmap)
 
   storeAnalysisResult dl ananame moduleName result
   stoptime <- getCPUTime
