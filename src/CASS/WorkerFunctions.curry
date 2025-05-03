@@ -3,11 +3,12 @@
 --- In particular, it contains some simple fixpoint computations.
 ---
 --- @author Heiko Hoffmann, Michael Hanus
---- @version April 2025
+--- @version May 2025
 --------------------------------------------------------------------------
 
 module CASS.WorkerFunctions where
 
+import Data.Char         ( isSpace )
 import Data.IORef
 import Data.List         ( find, partition )
 import System.CPUTime    ( getCPUTime )
@@ -86,7 +87,7 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
           (if withciweb then "/WEB" else "") ++ " for " ++
           moduleName ++ " / " ++ cirequest
         res <- askCurryInfoCmd withciweb (optVerb (ccOptions cconfig))
-                               moduleName entkind cirequest "CurryTerm"
+                               moduleName entkind cirequest "CurryMap"
         debugMessage dl 3 $ "Result received from CURRYINFO:\n" ++ show res
         return res
       else return Nothing
@@ -113,8 +114,8 @@ analysisClientWithStore cconfig store analysis fpmethod moduleName = do
  where
   dl = debugLevel cconfig
 
-  safeRead s = case readsPrec 0 s of [(x, "")] -> Just x
-                                     _         -> Nothing
+  safeRead s = case reads s of [(x,r)] | all isSpace r -> Just x
+                               _                       -> Nothing
 
 -- Loads analysis results for a list of modules where already read results
 -- are stored in an IORef.
