@@ -205,7 +205,4 @@ storeServerPortNumber portnum = do
 removeServerPortNumber :: IO ()
 removeServerPortNumber = getServerPortFileName >>= removeFile
 
-readServerPortPid :: IO (Int,Int)
-readServerPortPid = getServerPortFileName >>= readFile >>= return . read
-
 --------------------------------------------------------------------------
