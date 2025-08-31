@@ -26,6 +26,9 @@
         "xml"           : ">= 3.0.0, < 4.0.0"
     },
     "configModule": "CASS.PackageConfig",
+    "exportedModules": [ "CASS.Configuration", "CASS.Doc", "CASS.Options",
+                         "CASS.Registry",
+                         "CASS.Server", "CASS.ServerFormats" ],
     "executable": {
         "name": "cass",
         "main": "CASS.Main",
