@@ -1,12 +1,12 @@
 --------------------------------------------------------------------------
---- This module supports the configuration of the analysis system
---- and provides access to some values in Config file.
----
---- It also provides an operation to get the port number of
---- the analysis server (which is implicitly started if necessary).
----
---- @author Michael Hanus
---- @version May 2025
+-- | Author : Michael Hanus
+--   Version: November 2025
+--
+-- This module supports the configuration of the analysis system
+-- and provides access to some values in Config file.
+--
+-- It also provides an operation to get the port number of
+-- the analysis server (which is implicitly started if necessary).
 --------------------------------------------------------------------------
 
 module CASS.Configuration
@@ -40,7 +40,7 @@ import CASS.PackageConfig ( packagePath, packageExecutable, packageVersion )
 systemBanner :: String
 systemBanner =
   let bannerText = "CASS: Curry Analysis Server System (Version " ++
-                   packageVersion ++ " of 03/05/2025 for " ++
+                   packageVersion ++ " of 26/11/2025 for " ++
                    curryCompiler ++ ")"
       bannerLine = take (length bannerText) (repeat '=')
    in bannerLine ++ "\n" ++ bannerText ++ "\n" ++ bannerLine
